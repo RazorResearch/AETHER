@@ -6,17 +6,17 @@ interface ProgressBarProps {
   tone?: 'accent' | 'ok' | 'warn' | 'danger' | 'glacier';
   className?: string;
   height?: 'xs' | 'sm';
-  /** Adds a subtle threshold marker at the given percentage. */
+  /** Adds a threshold marker at the given percentage. */
   markerAt?: number;
   label?: string;
 }
 
 const toneClasses = {
-  accent: 'from-accent/70 to-accent',
-  ok: 'from-ok/70 to-ok',
-  warn: 'from-warn/70 to-warn',
-  danger: 'from-danger/70 to-danger',
-  glacier: 'from-glacier/60 to-glacier',
+  accent: 'bg-accent',
+  ok: 'bg-ok',
+  warn: 'bg-warn',
+  danger: 'bg-danger',
+  glacier: 'bg-glacier',
 };
 
 export function ProgressBar({
@@ -31,8 +31,8 @@ export function ProgressBar({
   return (
     <div
       className={cn(
-        'relative w-full overflow-hidden rounded-full bg-surface2',
-        height === 'xs' ? 'h-1' : 'h-1.5',
+        'relative w-full overflow-hidden rounded-[1px] bg-surface2',
+        height === 'xs' ? 'h-[3px]' : 'h-[5px]',
         className,
       )}
       role="progressbar"
@@ -42,12 +42,12 @@ export function ProgressBar({
       aria-label={label}
     >
       <div
-        className={cn('h-full rounded-full bg-gradient-to-r transition-[width] duration-500 ease-out', toneClasses[tone])}
+        className={cn('h-full transition-[width] duration-500', toneClasses[tone])}
         style={{ width: `${clamped}%` }}
       />
       {typeof markerAt === 'number' && (
         <span
-          className="absolute top-0 h-full w-px bg-ink/40"
+          className="absolute top-0 h-full w-px bg-ink/50"
           style={{ left: `${Math.min(100, Math.max(0, markerAt))}%` }}
         />
       )}

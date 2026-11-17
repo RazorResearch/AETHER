@@ -43,9 +43,10 @@ export function AppShell() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /* Remember the last visited workspace page. */
+  /* Remember the last visited workspace page and reset the scroll offset. */
   useEffect(() => {
     setLastVisitedPath(location.pathname);
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }, [location.pathname, setLastVisitedPath]);
 
   return (
@@ -54,8 +55,7 @@ export function AppShell() {
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar />
         <main className="relative flex-1">
-          <div className="app-grid pointer-events-none absolute inset-x-0 top-0 h-[320px] opacity-60" />
-          <div className="relative mx-auto w-full max-w-[1460px] px-4 py-5 lg:px-7 lg:py-6">
+          <div className="relative mx-auto w-full max-w-[1400px] px-4 py-5 lg:px-6">
             <Outlet />
           </div>
         </main>

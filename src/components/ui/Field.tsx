@@ -9,7 +9,7 @@ import { ChevronDown } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
 const controlClasses =
-  'w-full rounded-md border border-line bg-base/70 px-3 text-[13px] text-ink transition-colors placeholder:text-ink-mute/80 hover:border-ink-mute/40 focus:border-accent/60 focus:outline-none focus:ring-2 focus:ring-accent/15 disabled:cursor-not-allowed disabled:opacity-50';
+  'w-full rounded-sm border border-line bg-base/60 px-2.5 text-[13.5px] text-ink transition-colors placeholder:text-ink-mute/60 hover:border-ink-mute/40 focus:border-accent/60 focus:outline-none focus:ring-1 focus:ring-accent/20 disabled:cursor-not-allowed disabled:opacity-40';
 
 export function Label({
   children,
@@ -24,10 +24,10 @@ export function Label({
 }) {
   return (
     <div className={cn('mb-1.5 flex items-baseline justify-between gap-3', className)}>
-      <label htmlFor={htmlFor} className="text-[11.5px] font-medium text-ink-dim">
+      <label htmlFor={htmlFor} className="text-[13px] font-medium text-ink-dim">
         {children}
       </label>
-      {hint && <span className="font-mono text-[10px] text-ink-mute">{hint}</span>}
+      {hint && <span className="font-mono text-[12.5px] text-ink-mute">{hint}</span>}
     </div>
   );
 }
@@ -61,7 +61,7 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function T
         <input
           ref={ref}
           id={inputId}
-          className={cn(controlClasses, 'h-9', icon ? 'pl-8' : false, className)}
+          className={cn(controlClasses, 'h-8', icon ? 'pl-7' : false, className)}
           {...rest}
         />
       </div>
@@ -92,7 +92,7 @@ export const SelectInput = forwardRef<HTMLSelectElement, SelectInputProps>(funct
         <select
           ref={ref}
           id={selectId}
-          className={cn(controlClasses, 'h-9 appearance-none pr-8', className)}
+          className={cn(controlClasses, 'h-8 appearance-none pr-7', className)}
           {...rest}
         >
           {children}
@@ -143,13 +143,14 @@ interface ToggleProps {
 
 /** Accessible switch used for strategies and preferences. */
 export function Toggle({ checked, onChange, label, description, disabled, className }: ToggleProps) {
+  /* Switch styled as an instrument latch, not an iOS pill. */
   const content = (
     <>
       {label && (
         <span className="min-w-0">
-          <span className="block text-[12.5px] font-medium text-ink">{label}</span>
+          <span className="block text-[14px] font-medium text-ink">{label}</span>
           {description && (
-            <span className="mt-0.5 block text-[11px] leading-relaxed text-ink-mute">
+            <span className="mt-0.5 block text-[13px] leading-relaxed text-ink-mute">
               {description}
             </span>
           )}
@@ -157,14 +158,14 @@ export function Toggle({ checked, onChange, label, description, disabled, classN
       )}
       <span
         className={cn(
-          'relative ml-auto inline-flex h-[18px] w-[32px] shrink-0 items-center rounded-full border transition-colors duration-200',
-          checked ? 'border-accent/50 bg-accent/25' : 'border-line bg-surface2',
+          'relative ml-auto inline-flex h-[15px] w-[27px] shrink-0 items-center rounded-sm border transition-colors duration-150',
+          checked ? 'border-accent/50 bg-accent/15' : 'border-line bg-surface2',
         )}
       >
         <span
           className={cn(
-            'absolute h-[12px] w-[12px] rounded-full transition-all duration-200',
-            checked ? 'left-[17px] bg-accent shadow-[0_0_10px_rgb(var(--c-accent)/0.7)]' : 'left-[2px] bg-ink-mute',
+            'absolute h-[9px] w-[9px] rounded-[1px] transition-all duration-150',
+            checked ? 'left-[15px] bg-accent' : 'left-[2px] bg-ink-mute',
           )}
         />
       </span>
@@ -231,7 +232,7 @@ export function Segmented<T extends string>({
       role="tablist"
       aria-label={ariaLabel}
       className={cn(
-        'inline-flex items-center gap-0.5 rounded-md border border-line bg-base/50 p-0.5',
+        'inline-flex items-center gap-0.5 rounded-sm border border-line/80 bg-base/40 p-0.5',
         className,
       )}
     >
@@ -245,15 +246,13 @@ export function Segmented<T extends string>({
             type="button"
             onClick={() => onChange(option.value)}
             className={cn(
-              'focus-ring inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-[11.5px] font-medium transition-colors',
-              active
-                ? 'bg-surface2 text-ink shadow-[inset_0_0_0_1px_rgb(var(--c-line)/0.9)]'
-                : 'text-ink-mute hover:text-ink-dim',
+              'focus-ring inline-flex items-center gap-1.5 rounded-[2px] px-2 py-1 text-[13px] transition-colors',
+              active ? 'bg-surface2 text-ink' : 'text-ink-mute hover:text-ink-dim',
             )}
           >
             {option.label}
             {typeof option.count === 'number' && (
-              <span className={cn('readout text-[10px]', active ? 'text-accent' : 'text-ink-mute/70')}>
+              <span className={cn('readout text-[12.5px]', active ? 'text-accent' : 'text-ink-mute/70')}>
                 {option.count}
               </span>
             )}
@@ -290,12 +289,12 @@ export function RangeField({
   return (
     <div>
       <div className="mb-2 flex items-baseline justify-between gap-3">
-        <label htmlFor={id} className="text-[11.5px] font-medium text-ink-dim">
+        <label htmlFor={id} className="text-[13.5px] font-medium text-ink-dim">
           {label}
         </label>
-        <span className="readout text-[12px] text-ink">
+        <span className="readout text-[13.5px] text-ink">
           {value}
-          {unit && <span className="ml-1 text-[10.5px] text-ink-mute">{unit}</span>}
+          {unit && <span className="ml-1 text-[13px] text-ink-mute">{unit}</span>}
         </span>
       </div>
       <input
@@ -309,7 +308,7 @@ export function RangeField({
         className="focus-ring w-full"
       />
       {description && (
-        <p className="mt-1.5 text-[10.5px] leading-relaxed text-ink-mute">{description}</p>
+        <p className="mt-1.5 text-[13px] leading-relaxed text-ink-mute">{description}</p>
       )}
     </div>
   );

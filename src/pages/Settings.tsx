@@ -46,7 +46,6 @@ export function SettingsPage() {
       <PageHeader
         title="Settings"
         subtitle="Workspace preferences. Applied immediately and stored in this browser."
-        code="system / settings"
         meta={<Badge tone="muted" dot>local profile</Badge>}
       />
 
@@ -54,7 +53,6 @@ export function SettingsPage() {
         {/* --------------------------- appearance --------------------------- */}
         <Card>
           <CardHeader
-            kicker="appearance"
             title="Interface theme"
             hint="The entire workspace is driven by semantic color tokens."
             action={<MonitorSmartphone className="h-3.5 w-3.5 text-ink-mute/60" />}
@@ -80,48 +78,48 @@ export function SettingsPage() {
                   >
                     <div
                       className="flex h-16 gap-1.5 overflow-hidden rounded border border-line/60 p-1.5"
-                      style={{ background: theme.id === 'dark' ? '#080c14' : '#f3f6fa' }}
+                      style={{ background: theme.id === 'dark' ? '#0a0b0e' : '#f5f5f1' }}
                     >
                       <div
                         className="w-5 shrink-0 rounded-sm"
-                        style={{ background: theme.id === 'dark' ? '#101725' : '#e2e9f2' }}
+                        style={{ background: theme.id === 'dark' ? '#13151a' : '#e8e8e1' }}
                       />
                       <div className="flex flex-1 flex-col gap-1">
                         <div
                           className="h-2 w-full rounded-sm"
-                          style={{ background: theme.id === 'dark' ? '#1b2536' : '#d5dfeb' }}
+                          style={{ background: theme.id === 'dark' ? '#1c2027' : '#dcdcd3' }}
                         />
                         <div className="flex flex-1 gap-1">
                           <div
                             className="flex-1 rounded-sm"
-                            style={{ background: theme.id === 'dark' ? '#131c2b' : '#ffffff' }}
+                            style={{ background: theme.id === 'dark' ? '#111318' : '#fffffd' }}
                           />
                           <div
                             className="flex-1 rounded-sm"
-                            style={{ background: theme.id === 'dark' ? '#131c2b' : '#ffffff' }}
+                            style={{ background: theme.id === 'dark' ? '#111318' : '#fffffd' }}
                           />
                         </div>
                         <div
                           className="h-1 w-2/3 rounded-sm"
-                          style={{ background: theme.id === 'dark' ? '#22d3ee' : '#0891b2' }}
+                          style={{ background: theme.id === 'dark' ? '#4ac2d0' : '#0c6e7a' }}
                         />
                       </div>
                     </div>
                     <div className="mt-2 flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 text-[11.5px] font-medium text-ink">
+                      <span className="flex items-center gap-1.5 text-[13.5px] font-medium text-ink">
                         <Icon className="h-3 w-3 text-ink-mute" />
                         {theme.label}
                       </span>
                       {active && <Check className="h-3 w-3 text-accent" strokeWidth={3} />}
                     </div>
-                    <p className="mt-0.5 text-[10px] leading-relaxed text-ink-mute">
+                    <p className="mt-0.5 text-[12.5px] leading-relaxed text-ink-mute">
                       {theme.description}
                     </p>
                   </button>
                 );
               })}
             </div>
-            <p className="text-[10.5px] leading-relaxed text-ink-mute">
+            <p className="text-[13px] leading-relaxed text-ink-mute">
               Chart colors follow the theme automatically. No reload is required.
             </p>
           </CardBody>
@@ -129,7 +127,7 @@ export function SettingsPage() {
 
         {/* ----------------------------- general ---------------------------- */}
         <Card>
-          <CardHeader kicker="general" title="Language, units and startup" />
+          <CardHeader title="Language, units and startup" />
           <CardBody className="space-y-3.5">
             <SelectInput
               label="Interface language"
@@ -140,15 +138,15 @@ export function SettingsPage() {
             >
               <option value="en">English (US)</option>
             </SelectInput>
-            <p className="-mt-1 text-[10px] leading-relaxed text-ink-mute">
+            <p className="-mt-1 text-[12.5px] leading-relaxed text-ink-mute">
               This build ships in English only. Localization is planned; the selector stays disabled
               rather than pretending to switch languages.
             </p>
 
             <div>
               <div className="mb-1.5 flex items-baseline justify-between">
-                <span className="text-[11.5px] font-medium text-ink-dim">Storage units</span>
-                <span className="font-mono text-[10px] text-ink-mute">
+                <span className="text-[13.5px] font-medium text-ink-dim">Storage units</span>
+                <span className="font-mono text-[12.5px] text-ink-mute">
                   {settings.unit === 'GiB' ? 'binary · 1024' : 'decimal · 1000'}
                 </span>
               </div>
@@ -161,7 +159,7 @@ export function SettingsPage() {
                   { value: 'GB', label: 'GB · decimal' },
                 ]}
               />
-              <p className="mt-1.5 text-[10px] leading-relaxed text-ink-mute">
+              <p className="mt-1.5 text-[12.5px] leading-relaxed text-ink-mute">
                 Affects every size readout in the workspace. Model files are usually described in
                 binary units.
               </p>
@@ -187,7 +185,6 @@ export function SettingsPage() {
         {/* ---------------------------- workspace --------------------------- */}
         <Card>
           <CardHeader
-            kicker="workspace"
             title="Directories"
             hint="Placeholders for the future native runtime."
             action={<Badge tone="muted" mono>not accessed</Badge>}
@@ -211,13 +208,13 @@ export function SettingsPage() {
               <Button variant="outline" size="sm" icon={<FolderOpen />} onClick={handleBrowse}>
                 Browse…
               </Button>
-              <span className="text-[10px] text-ink-mute">
+              <span className="text-[12.5px] text-ink-mute">
                 Paths are persisted locally and never resolved by the browser.
               </span>
             </div>
             <div className="flex items-start gap-2 rounded border border-line/60 bg-raised/30 px-2.5 py-2">
               <Info className="mt-0.5 h-3 w-3 shrink-0 text-ink-mute" />
-              <p className="text-[10.5px] leading-relaxed text-ink-mute">
+              <p className="text-[13px] leading-relaxed text-ink-mute">
                 AETHER reads no files in this build. The Python engine and Tauri shell will receive
                 these paths as launch arguments.
               </p>
@@ -228,7 +225,6 @@ export function SettingsPage() {
         {/* ------------------------------ about ----------------------------- */}
         <Card>
           <CardHeader
-            kicker="about"
             title="AETHER"
             hint="Adaptive AI Optimization Platform"
             action={<ShieldCheck className="h-3.5 w-3.5 text-accent/70" />}
@@ -243,10 +239,10 @@ export function SettingsPage() {
                 ['Build', 'Preview · engine offline'],
               ].map(([label, value]) => (
                 <div key={label} className="flex items-baseline justify-between gap-3">
-                  <dt className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-ink-mute">
+                  <dt className="font-mono text-[12px] uppercase tracking-[0.12em] text-ink-mute">
                     {label}
                   </dt>
-                  <dd className="text-[11.5px] text-ink-dim">{value}</dd>
+                  <dd className="text-[13.5px] text-ink-dim">{value}</dd>
                 </div>
               ))}
             </dl>
@@ -254,7 +250,7 @@ export function SettingsPage() {
             <div className="flex flex-wrap items-center gap-2 border-t border-line/50 pt-3">
               <Link
                 to="/about"
-                className="focus-ring inline-flex h-8 items-center rounded-md border border-line bg-surface2 px-3 text-[12px] text-ink transition-colors hover:border-accent/40 hover:text-accent"
+                className="focus-ring inline-flex h-8 items-center rounded-md border border-line bg-surface2 px-3 text-[13.5px] text-ink transition-colors hover:border-accent/40 hover:text-accent"
               >
                 About RazorResearch
               </Link>
@@ -268,7 +264,7 @@ export function SettingsPage() {
                 Restore demo data
               </Button>
             </div>
-            <p className="text-[10px] leading-relaxed text-ink-mute">
+            <p className="text-[12.5px] leading-relaxed text-ink-mute">
               Restoring demo data clears local edits to models, experiments, activity and settings.
             </p>
           </CardBody>
@@ -301,7 +297,7 @@ export function SettingsPage() {
           </>
         }
       >
-        <p className="text-[11.5px] leading-relaxed text-ink-dim">
+        <p className="text-[13.5px] leading-relaxed text-ink-dim">
           Only data stored in this browser is affected. No file on disk is created or modified.
         </p>
       </Modal>

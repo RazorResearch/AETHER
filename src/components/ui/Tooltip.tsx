@@ -24,21 +24,20 @@ export function InfoHint({
   showIcon = true,
 }: InfoHintProps) {
   const position =
-    align === 'right'
-      ? 'right-0'
-      : align === 'center'
-        ? 'left-1/2 -translate-x-1/2'
-        : 'left-0';
+    align === 'right' ? 'right-0' : align === 'center' ? 'left-1/2 -translate-x-1/2' : 'left-0';
 
   return (
-    <span className={cn('group/hint relative inline-flex items-center gap-1', className)} tabIndex={0}>
-      {label && <span className="border-b border-dotted border-ink-mute/50">{label}</span>}
-      {showIcon && <Info className="h-3 w-3 shrink-0 text-ink-mute/80" aria-hidden="true" />}
+    <span
+      className={cn('group/hint relative inline-flex items-center gap-1', className)}
+      tabIndex={0}
+    >
+      {label && <span className="border-b border-dotted border-ink-mute/40">{label}</span>}
+      {showIcon && <Info className="h-3 w-3 shrink-0 text-ink-mute/60" aria-hidden="true" />}
       <span
         role="tooltip"
         className={cn(
-          'pointer-events-none absolute top-full z-30 mt-2 w-[248px] rounded-md border border-line bg-raised px-3 py-2.5 text-left text-[11.5px] font-normal leading-relaxed tracking-normal text-ink-dim opacity-0 shadow-modal',
-          'transition-opacity duration-150 group-hover/hint:opacity-100 group-focus-within/hint:opacity-100',
+          'pointer-events-none absolute top-full z-30 mt-2 w-[240px] rounded-sm border border-line bg-raised px-2.5 py-2 text-left text-[13px] font-normal leading-relaxed tracking-normal text-ink-dim opacity-0',
+          'transition-opacity duration-100 group-hover/hint:opacity-100 group-focus-within/hint:opacity-100',
           position,
         )}
       >

@@ -4,10 +4,10 @@ import { cn } from '@/utils/cn';
 export function Skeleton({ className }: { className?: string }) {
   return (
     <div
-      className={cn('relative overflow-hidden rounded bg-surface2/70', className)}
+      className={cn('relative overflow-hidden rounded-sm bg-surface2/60', className)}
       aria-hidden="true"
     >
-      <div className="absolute inset-0 -translate-x-full animate-sweep bg-gradient-to-r from-transparent via-ink/[0.06] to-transparent" />
+      <div className="absolute inset-0 -translate-x-full animate-sweep bg-gradient-to-r from-transparent via-ink/[0.035] to-transparent" />
     </div>
   );
 }

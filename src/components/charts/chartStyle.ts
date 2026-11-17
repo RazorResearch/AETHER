@@ -8,31 +8,31 @@ export function tooltipStyle(theme: ChartTheme) {
     contentStyle: {
       background: theme.tooltipBg,
       border: `1px solid ${theme.tooltipBorder}`,
-      borderRadius: 6,
-      padding: '7px 10px',
-      boxShadow: '0 24px 48px -24px rgba(0,0,0,0.7)',
-      fontSize: 11,
+      borderRadius: 3,
+      padding: '6px 8px',
+      boxShadow: '0 10px 24px -16px rgba(0,0,0,0.6)',
+      fontSize: 12,
     },
     labelStyle: {
       color: theme.axis,
-      fontFamily: "'JetBrains Mono', monospace",
-      fontSize: 9.5,
+      fontFamily: "'IBM Plex Mono', monospace",
+      fontSize: 10.5,
       textTransform: 'uppercase' as const,
-      letterSpacing: '0.1em',
-      marginBottom: 3,
+      letterSpacing: '0.06em',
+      marginBottom: 2,
     },
     itemStyle: {
       color: theme.tooltipText,
-      fontSize: 11,
+      fontSize: 12,
       padding: '1px 0',
     },
     wrapperStyle: { outline: 'none' as const },
-    cursor: { fill: 'rgb(148 163 184 / 0.06)' },
+    cursor: { fill: 'rgb(148 163 184 / 0.05)' },
   };
 }
 
 export const axisTickStyle = (theme: ChartTheme) => ({
   fill: theme.axis,
-  fontSize: 9.5,
-  fontFamily: "'JetBrains Mono', monospace",
+  fontSize: 10.5,
+  fontFamily: "'IBM Plex Mono', monospace",
 });

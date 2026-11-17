@@ -59,7 +59,7 @@ export function Modal({
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:p-8">
       <div
-        className="fixed inset-0 animate-fade-in bg-[#03060b]/75 backdrop-blur-[2px]"
+        className="fixed inset-0 animate-fade-in bg-black/60"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -69,7 +69,7 @@ export function Modal({
         aria-modal="true"
         aria-label={title}
         className={cn(
-          'relative my-auto w-full animate-panel-in rounded-lg border border-line bg-surface shadow-modal',
+          'relative my-auto w-full animate-panel-in rounded-md border border-line bg-surface shadow-modal',
           widths[size],
         )}
       >
@@ -78,7 +78,7 @@ export function Modal({
             {kicker && <div className="mono-label mb-1.5">{kicker}</div>}
             <h2 className="text-[15px] font-medium tracking-[-0.01em] text-ink">{title}</h2>
             {description && (
-              <p className="mt-1.5 max-w-[52ch] text-[12px] leading-relaxed text-ink-dim">
+              <p className="mt-1.5 max-w-[52ch] text-[13.5px] leading-relaxed text-ink-dim">
                 {description}
               </p>
             )}
