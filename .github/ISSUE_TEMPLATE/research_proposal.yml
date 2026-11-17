@@ -1,0 +1,87 @@
+name: Research proposal
+description: Propose a hypothesis, experiment design or evaluation protocol.
+title: "[Research]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template to propose research that AETHER should be able to
+        measure — not to publish results. Results submitted without a
+        reproducible protocol and environment description cannot be accepted.
+
+  - type: textarea
+    id: hypothesis
+    attributes:
+      label: Hypothesis
+      description: State a falsifiable claim. Example — "q8 KV cache storage keeps perplexity within 1% of f16 at 32k context on a 7B model."
+      placeholder: "We expect ... because ..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: Why does this matter for local inference? Link prior art, papers or related issues.
+    validations:
+      required: true
+
+  - type: input
+    id: model
+    attributes:
+      label: Model(s) and quantization
+      placeholder: "Llama 3.1 8B Instruct, Q4_K_M, 8k context"
+    validations:
+      required: true
+
+  - type: input
+    id: hardware
+    attributes:
+      label: Target hardware
+      placeholder: "8 GB VRAM class GPU, 16 GB RAM, CUDA"
+    validations:
+      required: true
+
+  - type: textarea
+    id: protocol
+    attributes:
+      label: Proposed protocol
+      description: Variables, controls, number of runs, warm-up, seeds, prompt sets and stopping criteria.
+      placeholder: |
+        Independent variable:
+        Controlled variables:
+        Runs per configuration:
+        Warm-up / measurement window:
+        Prompt or evaluation dataset:
+    validations:
+      required: true
+
+  - type: textarea
+    id: metrics
+    attributes:
+      label: Metrics
+      description: Which metrics decide the outcome, and in which direction? Include quality metrics, not only speed.
+      placeholder: |
+        Tokens per second, TTFT, peak VRAM, peak RAM, perplexity, benchmark accuracy, Wh/1k tokens
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected outcome and failure conditions
+      description: What result would support the hypothesis, and what result would refute it?
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: integrity
+    attributes:
+      label: Research integrity
+      options:
+        - label: The protocol is reproducible and does not require invented data.
+          required: true
+        - label: Quality regressions will be reported alongside performance gains.
+          required: true
+        - label: I understand that version 0.1 has no engine and cannot execute this proposal yet.
+          required: true

@@ -1,0 +1,124 @@
+name: Bug report
+description: Report a defect in the AETHER interface, build or tooling.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a problem.
+
+        **Before filing:** AETHER 0.1 has no optimization engine, no hardware
+        detection and no real benchmarks. Behaviour that reports these as
+        unavailable is intended, not a bug. Security issues must go through the
+        private process in `SECURITY.md`, never a public issue.
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Preflight checklist
+      options:
+        - label: I searched existing issues and found no duplicate.
+          required: true
+        - label: This report does not describe a security vulnerability.
+          required: true
+        - label: I understand all displayed metrics are demonstration data.
+          required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area
+      description: Where does the problem appear?
+      options:
+        - Overview
+        - Models
+        - Hardware
+        - Optimization
+        - Experiments
+        - Benchmarks
+        - Activity
+        - Settings
+        - About RazorResearch
+        - Navigation / layout
+        - Build, typecheck or tooling
+        - Backend (local API)
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened
+      description: Describe the observed behaviour precisely.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+      description: What should the interface or tooling have done instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Numbered steps, starting from a fresh load if possible.
+      placeholder: |
+        1. Open /#/models
+        2. Filter by Safetensors
+        3. Click "Import model"
+        4. ...
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: AETHER version or commit
+      placeholder: "v0.1.0-alpha / commit 447362c"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Where did you run it?
+      options:
+        - Local browser (Chromium)
+        - Local browser (Firefox)
+        - Local browser (Safari)
+        - Tauri desktop shell
+        - Production build served locally
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: "Windows 11, Linux (distribution), macOS version"
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Console output or logs
+      description: Paste relevant errors. Remove personal paths and any secrets.
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: Drag and drop images here if the defect is visual.
+    validations:
+      required: false
