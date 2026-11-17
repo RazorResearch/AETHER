@@ -1,0 +1,101 @@
+name: Feature request
+description: Propose a capability, interface improvement or design change.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        AETHER rejects features that claim capabilities it does not have. Before
+        proposing engine-related work, read the scope section of
+        `CONTRIBUTING.md`: version 0.1 is an interface foundation only.
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Preflight checklist
+      options:
+        - label: I searched existing issues and discussions for a similar proposal.
+          required: true
+        - label: This proposal does not require inventing benchmark or hardware data.
+          required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Overview
+        - Models
+        - Hardware
+        - Optimization
+        - Experiments
+        - Benchmarks
+        - Activity
+        - Settings
+        - Navigation / design system
+        - Backend / API
+        - Research engine (future)
+        - Documentation
+        - Tooling / CI
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What is difficult or missing today? Describe the research or user need, not only the solution.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the behaviour, the affected screens and any data the interface would need.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other approaches, including doing nothing.
+    validations:
+      required: false
+
+  - type: dropdown
+    id: dependency
+    attributes:
+      label: What does this depend on?
+      description: Be explicit — it affects when the feature can be honest about its state.
+      options:
+        - Frontend only (can be implemented now)
+        - Backend / local API
+        - Optimization engine (not implemented)
+        - Real hardware telemetry bridge
+        - Documentation only
+        - Not sure
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: principles
+    attributes:
+      label: Project principles
+      description: Confirm the proposal is compatible with how AETHER works.
+      options:
+        - label: It stays local — no account, no third-party service, no telemetry upload.
+          required: true
+        - label: Any unavailable dependency will be shown as "Engine unavailable" / "Coming soon" rather than simulated as success.
+          required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope and risks
+      description: What could this break, and what should explicitly stay out of scope?
+    validations:
+      required: false

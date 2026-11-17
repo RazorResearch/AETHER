@@ -1,0 +1,29 @@
+cff-version: 1.2.0
+message: "If you use AETHER in academic work, please cite this software using the metadata below."
+title: "AETHER: Adaptive AI Optimization Platform"
+type: software
+authors:
+  - name: "RazorResearch"
+    website: "https://github.com/RazorResearch"
+abstract: >-
+  AETHER is an open research workspace for analysing and optimizing local
+  language models. It makes the trade-offs between model intelligence, inference
+  speed, VRAM and RAM footprint, and energy consumption explicit and inspectable.
+  Version 0.1 is an interface foundation: it ships a navigable desktop-style
+  workspace with demonstration data only. No optimization engine, quantization
+  pipeline, CUDA kernel or inference runtime is included in this release.
+version: "0.1.0-alpha"
+date-released: "2026-11-17"
+license: "Apache-2.0"
+repository-code: "https://github.com/RazorResearch/AETHER"
+url: "https://github.com/RazorResearch/AETHER"
+keywords:
+  - "local AI"
+  - "language models"
+  - "model optimization"
+  - "quantization"
+  - "inference performance"
+  - "memory efficiency"
+  - "energy efficiency"
+  - "open research"
+  - "reproducibility"
