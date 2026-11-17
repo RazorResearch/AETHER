@@ -3,14 +3,18 @@ import { Settings2 } from 'lucide-react';
 import { Logo } from '@/components/ui/Logo';
 import { NavLinkItem } from '@/components/navigation/NavLinkItem';
 import { navSections } from '@/components/navigation/navConfig';
-import { useAppStore } from '@/store/useAppStore';
+import { useEngineStore } from '@/store/useEngineStore';
 import { APP_CHANNEL, APP_VERSION } from '@/store/defaults';
 import { cn } from '@/utils/cn';
 
 /** Persistent workspace navigation rail. */
 export function Sidebar() {
-  const models = useAppStore((state) => state.models);
-  const experiments = useAppStore((state) => state.experiments);
+  const models = useEngineStore((state) => state.models);
+  const experiments = useEngineStore((state) => state.experiments);
+  const connection = useEngineStore((state) => state.connection);
+  const health = useEngineStore((state) => state.health);
+  const llama = health?.engines.find((e) => e.name === 'llama.cpp');
+  const online = connection === 'online';
   const location = useLocation();
 
   const counters = {
@@ -55,13 +59,22 @@ export function Sidebar() {
       <div className="border-t border-line/60 px-2 pb-2 pt-2.5">
         <div className="mb-2.5 hidden px-2 lg:block">
           <div className="flex items-center gap-1.5">
-            <span className="h-[4px] w-[4px] rounded-[1px] bg-warn" />
-            <span className="font-mono text-[11.5px] uppercase tracking-[0.12em] text-warn/90">
-              engine unavailable
+            <span className={cn('h-[4px] w-[4px] rounded-[1px]', online ? 'bg-ok' : connection === 'connecting' ? 'bg-ink-mute' : 'bg-danger')} />
+            <span
+              className={cn(
+                'font-mono text-[11.5px] uppercase tracking-[0.12em]',
+                online ? 'text-ok/90' : connection === 'connecting' ? 'text-ink-mute' : 'text-danger/90',
+              )}
+            >
+              {online ? `engine online · v${health?.version}` : connection === 'connecting' ? 'connecting…' : 'engine offline'}
             </span>
           </div>
           <p className="mt-1 text-[12.5px] leading-snug text-ink-mute/80">
-            Preview build. No inference or optimization engine attached.
+            {online
+              ? llama?.available
+                ? `llama.cpp ${llama.version ?? ''} attached.`
+                : 'llama.cpp not found: analysis and estimates only.'
+              : 'Start backend/ to load real data.'}
           </p>
         </div>
 
@@ -77,7 +90,7 @@ export function Sidebar() {
               Local operator
             </span>
             <span className="block truncate font-mono text-[11.5px] leading-tight text-ink-mute/70">
-              offline · no account
+              local · no account
             </span>
           </span>
           <Settings2 className="hidden h-3 w-3 text-ink-mute/70 lg:block" />

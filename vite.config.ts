@@ -15,5 +15,11 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: false,
+    // The AETHER engine (backend/, FastAPI) listens on 127.0.0.1:8765.
+    // Proxying keeps the UI same-origin in development; a packaged build sets
+    // VITE_AETHER_API to the engine URL instead.
+    proxy: {
+      '/api': { target: process.env.AETHER_ENGINE_URL ?? 'http://127.0.0.1:8765', changeOrigin: false },
+    },
   },
 });

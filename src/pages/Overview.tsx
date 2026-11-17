@@ -1,285 +1,228 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  ArrowRight,
-  ArrowUpRight,
-  BarChart3,
-  Boxes,
-  FlaskConical,
-  RefreshCw,
-} from 'lucide-react';
+import { ArrowRight, ArrowUpRight, BarChart3, Boxes, FlaskConical } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge, ProvenanceBadge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
 import { Card, CardBody, CardHeader } from '@/components/ui/Card';
-import { Segmented } from '@/components/ui/Field';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { MetricCard } from '@/components/cards/MetricCard';
 import { StatTile } from '@/components/cards/StatTile';
 import { ActivityList } from '@/components/cards/ActivityList';
-import { PerformanceLegend, PerformanceTrendChart } from '@/components/charts/PerformanceTrendChart';
-import { useTelemetry } from '@/hooks/useTelemetry';
+import { EngineOffline } from '@/components/engine/EngineOffline';
+import { formatParams, toActivityEvent } from '@/api/adapters';
 import { useAppStore } from '@/store/useAppStore';
-import { benchmarkRuns } from '@/data/demo';
-import { toast } from '@/store/useToastStore';
-import { formatGigabytes, formatNumber, formatRelative, percentOf } from '@/utils/format';
+import { useEngineStore } from '@/store/useEngineStore';
+import { formatBytes, formatNumber, formatRelative } from '@/utils/format';
 
-type Period = '7' | '14' | '30';
+const dash = '—';
 
-const buildTrend = (base: number, seed: number) =>
-  Array.from({ length: 12 }, (_, index) =>
-    Math.max(2, base + Math.sin(index * 0.85 + seed) * 5.5 + index * 0.35),
-  );
-
-/** Workspace home: hardware snapshot, activity and performance trend. */
+/** Workspace home: live hardware, measured throughput, library and engine events. */
 export function OverviewPage() {
-  const [period, setPeriod] = useState<Period>('14');
-  const [refreshing, setRefreshing] = useState(false);
+  const hw = useEngineStore((s) => s.hardware);
+  const history = useEngineStore((s) => s.hardwareHistory);
+  const models = useEngineStore((s) => s.models);
+  const experiments = useEngineStore((s) => s.experiments);
+  const benchmarks = useEngineStore((s) => s.benchmarks);
+  const rawActivity = useEngineStore((s) => s.activity);
+  const connection = useEngineStore((s) => s.connection);
+  const unit = useAppStore((s) => s.settings.unit);
+  const online = connection === 'online';
 
-  const { snapshot, refresh } = useTelemetry({ intervalMs: 6000 });
-  const models = useAppStore((state) => state.models);
-  const experiments = useAppStore((state) => state.experiments);
-  const activity = useAppStore((state) => state.activity);
-  const unit = useAppStore((state) => state.settings.unit);
+  const activity = useMemo(() => rawActivity.map(toActivityEvent), [rawActivity]);
+  const gpu = hw?.gpus[0];
+  const trend = (key: 'vramPct' | 'ramPct' | 'gpuUtil' | 'cpuUtil') =>
+    history.map((h) => h[key]).filter((v): v is number => v != null);
+  const vramPct = gpu?.vram_used_bytes != null && gpu.vram_total_bytes ? (gpu.vram_used_bytes / gpu.vram_total_bytes) * 100 : 0;
+  const div = unit === 'GB' ? 1e9 : 1024 ** 3;
 
-  const vramPercent = percentOf(snapshot.vramUsedGb, snapshot.vramTotalGb);
-  const ramPercent = percentOf(snapshot.ramUsedGb, snapshot.ramTotalGb);
-
-  const trends = useMemo(
-    () => ({
-      vram: buildTrend(vramPercent, 1),
-      ram: buildTrend(ramPercent, 2.4),
-      gpu: buildTrend(snapshot.gpuUtilization, 4),
-      cpu: buildTrend(snapshot.cpuUtilization, 5.6),
-    }),
-    [vramPercent, ramPercent, snapshot.gpuUtilization, snapshot.cpuUtilization],
+  const measured = useMemo(
+    () =>
+      benchmarks
+        .filter((b) => b.status === 'completed' && b.record?.gen_tps)
+        .slice(0, 8)
+        .map((b) => ({
+          id: b.id,
+          label: b.record!.model.name,
+          detail: `${b.record!.model.quantization ?? ''} · KV ${b.spec.params?.runtime?.cache_type_k ?? 'f16'}/${b.spec.params?.runtime?.cache_type_v ?? 'f16'} · ngl ${b.spec.params?.runtime?.n_gpu_layers ?? 99}`,
+          tps: b.record!.gen_tps!.mean,
+          std: b.record!.gen_tps!.std ?? 0,
+          at: b.created_at,
+        })),
+    [benchmarks],
   );
-
-  const lastModel = models[0];
-
-  const handleRefresh = () => {
-    setRefreshing(true);
-    refresh();
-    window.setTimeout(() => {
-      setRefreshing(false);
-      toast.success('Workspace refreshed', 'Simulated telemetry and demo series were reloaded.');
-    }, 620);
-  };
+  const maxTps = Math.max(1, ...measured.map((m) => m.tps));
+  const lastModel = models.reduce<(typeof models)[number] | null>(
+    (latest, m) => (!latest || m.created_at > latest.created_at ? m : latest),
+    null,
+  );
 
   return (
     <div className="animate-fade-in">
-      <PageHeader
-        title="Overview"
-        subtitle="Local AI optimization workspace."
-        meta={<ProvenanceBadge />}
-        actions={
-          <>
-            <Segmented<Period>
-              ariaLabel="Performance window"
-              value={period}
-              onChange={setPeriod}
-              options={[
-                { value: '7', label: '7d' },
-                { value: '14', label: '14d' },
-                { value: '30', label: '30d' },
-              ]}
-            />
-            <Button
-              variant="secondary"
-              icon={<RefreshCw className={refreshing ? 'animate-spin' : undefined} />}
-              onClick={handleRefresh}
-              loading={refreshing}
-            >
-              Refresh
-            </Button>
-          </>
-        }
-      />
+      <PageHeader title="Overview" subtitle="Local AI optimization workspace." meta={<ProvenanceBadge kind={online ? 'live' : 'offline'} />} />
 
-      {/* ------------------------------ hardware ------------------------------ */}
+      <EngineOffline />
+
       <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-[13.5px] font-medium text-ink-dim">Hardware</h2>
-        <Link
-          to="/hardware"
-          className="focus-ring inline-flex items-center gap-1 rounded-sm text-[12.5px] text-ink-mute transition-colors hover:text-ink"
-        >
-          Full diagnostics
-          <ArrowUpRight className="h-3 w-3" />
+        <Link to="/hardware" className="focus-ring inline-flex items-center gap-1 rounded-sm text-[12.5px] text-ink-mute transition-colors hover:text-ink">
+          Full diagnostics <ArrowUpRight className="h-3 w-3" />
         </Link>
       </div>
 
       <Card className="overflow-hidden">
         <div className="grid grid-cols-1 gap-px bg-line/50 sm:grid-cols-2 xl:grid-cols-4">
-          {refreshing ? (
-            Array.from({ length: 4 }).map((_, index) => (
-              <Skeleton key={index} className="h-[118px] w-full rounded-none" />
-            ))
+          {!hw && connection === 'offline' ? (
+            <div className="col-span-full bg-surface px-4 py-8 text-center text-[13.5px] text-ink-mute">
+              No hardware data — the engine is offline.
+            </div>
+          ) : !hw ? (
+            Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-[118px] w-full rounded-none" />)
           ) : (
             <>
-            <MetricCard
-              label="GPU VRAM usage"
-              value={formatNumber(snapshot.vramUsedGb, 1)}
-              unit={unit}
-              secondary={`of ${formatGigabytes(snapshot.vramTotalGb, unit)} engaged`}
-              percent={vramPercent}
-              trend={trends.vram}
-              tone="accent"
-              detail="Resident GPU memory reported by the simulation layer. A native bridge will read VRAM through NVML / CUDA once the desktop shell is available."
-            />
-            <MetricCard
-              label="System RAM usage"
-              value={formatNumber(snapshot.ramUsedGb, 1)}
-              unit={unit}
-              secondary={`of ${formatGigabytes(snapshot.ramTotalGb, unit)} allocated`}
-              percent={ramPercent}
-              trend={trends.ram}
-              tone="glacier"
-              detail="Host memory held by the runtime process tree, including memory-mapped weight pages. Values here are generated, not measured."
-            />
-            <MetricCard
-              label="GPU utilization"
-              value={formatNumber(snapshot.gpuUtilization, 0)}
-              unit="%"
-              secondary={`die temp ${snapshot.gpuTemperatureC} °C · simulated`}
-              percent={snapshot.gpuUtilization}
-              trend={trends.gpu}
-              tone="ok"
-              detail="Share of SM time the device spent executing work over the sampling window. High utilization is expected during decode."
-            />
-            <MetricCard
-              label="CPU utilization"
-              value={formatNumber(snapshot.cpuUtilization, 0)}
-              unit="%"
-              secondary={`${snapshot.cpuCores} logical cores · simulated`}
-              percent={snapshot.cpuUtilization}
-              trend={trends.cpu}
-              tone="warn"
-              detail="Aggregate processor load. Offloaded transformer layers execute here, so this rises when VRAM ceilings force CPU placement."
-            />
+              <MetricCard
+                label="GPU VRAM usage"
+                value={gpu?.vram_used_bytes != null ? formatNumber(gpu.vram_used_bytes / div, 1) : dash}
+                unit={gpu ? unit : ''}
+                secondary={gpu?.vram_total_bytes != null ? `of ${formatBytes(gpu.vram_total_bytes, unit)} · ${gpu.name ?? ''}` : 'no NVIDIA GPU detected'}
+                percent={vramPct}
+                trend={trend('vramPct')}
+                tone="accent"
+                detail="Device memory in use by all processes, read through NVML."
+              />
+              <MetricCard
+                label="System RAM usage"
+                value={formatNumber(hw.memory.used_bytes / div, 1)}
+                unit={unit}
+                secondary={`of ${formatBytes(hw.memory.total_bytes, unit)} · ${formatBytes(hw.memory.available_bytes, unit)} available`}
+                percent={hw.memory.percent}
+                trend={trend('ramPct')}
+                tone="glacier"
+                detail="Host memory in use, read through psutil."
+              />
+              <MetricCard
+                label="GPU utilization"
+                value={gpu?.utilization_gpu_percent != null ? formatNumber(gpu.utilization_gpu_percent, 0) : dash}
+                unit={gpu?.utilization_gpu_percent != null ? '%' : ''}
+                secondary={gpu?.temperature_c != null ? `die ${gpu.temperature_c} °C · ${gpu.power_draw_w != null ? `${formatNumber(gpu.power_draw_w, 0)} W` : ''}` : 'not available'}
+                percent={gpu?.utilization_gpu_percent ?? 0}
+                trend={trend('gpuUtil')}
+                tone="ok"
+                detail="Share of time the GPU executed kernels over the last NVML sample period."
+              />
+              <MetricCard
+                label="CPU utilization"
+                value={hw.cpu.utilization_percent != null ? formatNumber(hw.cpu.utilization_percent, 0) : dash}
+                unit="%"
+                secondary={`${hw.cpu.logical_cores ?? dash} logical cores · ${hw.cpu.model ?? ''}`}
+                percent={hw.cpu.utilization_percent ?? 0}
+                trend={trend('cpuUtil')}
+                tone="warn"
+                detail="Mean load over all logical cores (100 ms sample)."
+              />
             </>
           )}
         </div>
         <div className="flex items-center gap-2 border-t border-line/50 px-4 py-2 text-[12.5px] text-ink-mute">
-          <ProvenanceBadge kind="simulated" />
-          <span>Generated locally — no GPU or system counters are read.</span>
+          <ProvenanceBadge kind={online ? 'live' : 'offline'} />
+          <span>
+            {hw ? `Read by the engine every 3 s · sparklines show this session's samples (${history.length})` : 'Waiting for the engine…'}
+          </span>
         </div>
       </Card>
 
-      {/* --------------------------- workspace + perf ------------------------- */}
       <div className="mt-3 grid grid-cols-1 gap-3 xl:grid-cols-12">
         <Card className="xl:col-span-8">
-          <CardHeader
-            title="Decode throughput"
-            hint="Tokens per second per model across the selected window."
-            action={<ProvenanceBadge />}
-          />
-          <CardBody className="pb-3 pt-4">
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <PerformanceLegend />
-              <span className="font-mono text-[12px] text-ink-mute/70">tok/s · batch 1 · simulated</span>
-            </div>
-            <PerformanceTrendChart days={Number(period)} />
-            <p className="mt-2 border-t border-line/40 pt-2.5 text-[13px] leading-relaxed text-ink-mute">
-              Demonstration series only. AETHER has not measured these values — the inference engine
-              is not part of this build.
-            </p>
+          <CardHeader title="Measured decode throughput" hint="Latest completed benchmarks (llama-bench tg, mean ± std)." action={<ProvenanceBadge kind="measured" />} />
+          <CardBody>
+            {measured.length === 0 ? (
+              <EmptyState
+                compact
+                icon={<BarChart3 />}
+                title="No measurement yet"
+                description="Throughput appears here once a benchmark has actually run. Nothing is extrapolated."
+                action={
+                  <Link to="/benchmarks" className="focus-ring inline-flex h-8 items-center rounded border border-line px-3 text-[13.5px] text-ink-dim hover:text-ink">
+                    Open benchmarks
+                  </Link>
+                }
+              />
+            ) : (
+              <ul className="space-y-2.5">
+                {measured.map((m) => (
+                  <li key={m.id}>
+                    <div className="flex items-baseline justify-between gap-3">
+                      <span className="min-w-0 truncate text-[13.5px] text-ink-dim">
+                        {m.label} <span className="font-mono text-[12px] text-ink-mute">{m.detail}</span>
+                      </span>
+                      <span className="readout shrink-0 text-[13px] text-ink">
+                        {formatNumber(m.tps, 1)} <span className="text-ink-mute">± {formatNumber(m.std, 1)} tok/s</span>
+                      </span>
+                    </div>
+                    <div className="mt-1 h-[5px] bg-surface2">
+                      <div className="h-full bg-accent" style={{ width: `${(m.tps / maxTps) * 100}%` }} />
+                    </div>
+                    <div className="mt-0.5 font-mono text-[11.5px] text-ink-mute/70">{formatRelative(m.at)}</div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </CardBody>
         </Card>
 
         <Card className="xl:col-span-4">
-          <CardHeader
-            title="Library state"
-            action={
-              <Link
-                to="/models"
-                className="focus-ring rounded-sm text-[12.5px] text-ink-mute hover:text-ink"
-              >
-                library
-              </Link>
-            }
-          />
+          <CardHeader title="Library state" action={<Link to="/models" className="focus-ring rounded-sm text-[12.5px] text-ink-mute hover:text-ink">library</Link>} />
           <CardBody className="space-y-3">
             <div className="grid grid-cols-3 gap-2">
-              <StatTile
-                label="Models"
-                value={models.length}
-                badge={<Boxes className="h-3 w-3 text-ink-mute/60" />}
-              />
-              <StatTile
-                label="Experiments"
-                value={experiments.length}
-                badge={<FlaskConical className="h-3 w-3 text-ink-mute/60" />}
-              />
-              <StatTile
-                label="Benchmarks"
-                value={benchmarkRuns.length}
-                badge={<BarChart3 className="h-3 w-3 text-ink-mute/60" />}
-              />
+              <StatTile label="Models" value={models.length} badge={<Boxes className="h-3 w-3 text-ink-mute/60" />} />
+              <StatTile label="Experiments" value={experiments.length} badge={<FlaskConical className="h-3 w-3 text-ink-mute/60" />} />
+              <StatTile label="Benchmarks" value={benchmarks.length} badge={<BarChart3 className="h-3 w-3 text-ink-mute/60" />} />
             </div>
-
             <div className="rounded-md border border-line/70 bg-raised/40 px-3 py-3">
               <div className="flex items-center justify-between">
-                <span className="font-mono text-[12px] uppercase tracking-[0.14em] text-ink-mute">
-                  Last model used
-                </span>
-                {lastModel && <Badge tone="ok" dot>{lastModel.status}</Badge>}
+                <span className="font-mono text-[12px] uppercase tracking-[0.14em] text-ink-mute">Last imported</span>
+                {lastModel && (
+                  <Badge tone={lastModel.status === 'available' ? 'ok' : 'danger'} dot>
+                    {lastModel.status}
+                  </Badge>
+                )}
               </div>
               {lastModel ? (
                 <>
-                  <div className="mt-2 text-[14px] font-medium leading-snug text-ink">
-                    {lastModel.name}
-                  </div>
+                  <div className="mt-2 text-[14px] font-medium leading-snug text-ink">{lastModel.name}</div>
                   <div className="mt-1 font-mono text-[12.5px] text-ink-mute">
-                    {lastModel.quantization} · {lastModel.format} ·{' '}
-                    {formatGigabytes(lastModel.sizeBytes / 1024 ** 3, unit)}
+                    {lastModel.quantization ?? dash} · {lastModel.architecture ?? dash} · {formatParams(lastModel.n_params)} ·{' '}
+                    {formatBytes(lastModel.file_size_bytes, unit)}
                   </div>
-                  <div className="mt-2 flex items-center justify-between text-[12.5px] text-ink-mute">
-                    <span>registered {formatRelative(lastModel.importedAt)}</span>
-                    <span className="font-mono uppercase tracking-[0.1em] text-ink-mute/70">
-                      session 01
-                    </span>
-                  </div>
+                  <div className="mt-2 text-[12.5px] text-ink-mute">registered {formatRelative(lastModel.created_at)}</div>
                 </>
               ) : (
                 <p className="mt-2 text-[13.5px] text-ink-mute">No model registered yet.</p>
               )}
             </div>
-
             <Link
               to="/optimization"
               className="focus-ring inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-md border border-line bg-surface2/70 text-[13.5px] font-medium text-ink transition-colors hover:border-accent/40 hover:text-accent"
             >
-              Configure an optimization
-              <ArrowRight className="h-3.5 w-3.5" />
+              Estimate & optimize <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </CardBody>
         </Card>
       </div>
 
-      {/* ------------------------------ activity ------------------------------ */}
       <div className="mt-3 grid grid-cols-1 gap-3 xl:grid-cols-12">
         <Card className="xl:col-span-7">
           <CardHeader
-            title="Event stream"
+            title="Engine events"
             action={
-              <Link
-                to="/activity"
-                className="focus-ring inline-flex items-center gap-1 rounded font-mono text-[12px] uppercase tracking-[0.12em] text-ink-mute hover:text-accent"
-              >
-                view log
-                <ArrowUpRight className="h-3 w-3" />
+              <Link to="/activity" className="focus-ring inline-flex items-center gap-1 rounded font-mono text-[12px] uppercase tracking-[0.12em] text-ink-mute hover:text-accent">
+                view log <ArrowUpRight className="h-3 w-3" />
               </Link>
             }
           />
           {activity.length === 0 ? (
             <CardBody>
-              <EmptyState
-                compact
-                icon={<BarChart3 />}
-                title="No events recorded"
-                description="Workspace events will appear here as soon as you register models or experiments."
-              />
+              <EmptyState compact icon={<BarChart3 />} title="No events recorded" description="Engine events appear as soon as you import a model or run a job." />
             </CardBody>
           ) : (
             <CardBody className="py-1.5">
@@ -289,10 +232,7 @@ export function OverviewPage() {
         </Card>
 
         <Card className="xl:col-span-5">
-          <CardHeader
-            title="Registered models"
-            action={<ProvenanceBadge />}
-          />
+          <CardHeader title="Registered models" action={<ProvenanceBadge kind={online ? 'live' : 'offline'} />} />
           <CardBody className="px-0 py-0">
             {models.length === 0 ? (
               <div className="p-4">
@@ -300,12 +240,9 @@ export function OverviewPage() {
                   compact
                   icon={<Boxes />}
                   title="Library is empty"
-                  description="Register a local model to start configuring optimization profiles."
+                  description="Import a local GGUF file to analyse it and estimate its memory footprint."
                   action={
-                    <Link
-                      to="/models"
-                      className="focus-ring inline-flex h-8 items-center rounded border border-ink/10 bg-ink px-3 text-[13.5px] font-medium text-base"
-                    >
+                    <Link to="/models" className="focus-ring inline-flex h-8 items-center rounded border border-ink/10 bg-ink px-3 text-[13.5px] font-medium text-base">
                       Open library
                     </Link>
                   }
@@ -313,27 +250,20 @@ export function OverviewPage() {
               </div>
             ) : (
               <ul className="divide-y divide-line/40">
-                {models.slice(0, 5).map((model) => (
-                  <li key={model.id} className="flex items-center gap-3 px-5 py-2.5">
+                {models.slice(0, 6).map((m) => (
+                  <li key={m.id} className="flex items-center gap-3 px-5 py-2.5">
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-[13.5px] text-ink-dim">{model.name}</div>
+                      <div className="truncate text-[13.5px] text-ink-dim">{m.name}</div>
                       <div className="font-mono text-[12px] text-ink-mute/80">
-                        {model.quantization} · {formatGigabytes(model.sizeBytes / 1024 ** 3, unit)}
+                        {m.quantization ?? m.format} · {formatBytes(m.file_size_bytes, unit)}
                       </div>
                     </div>
-                    <span className="readout text-[13px] text-ink-mute">{model.parameters}</span>
-                    <Badge
-                      tone={model.status === 'Unavailable' ? 'danger' : model.status === 'Ready' ? 'ok' : 'neutral'}
-                    >
-                      {model.status}
-                    </Badge>
+                    <span className="readout text-[13px] text-ink-mute">{formatParams(m.n_params)}</span>
+                    <Badge tone={m.status === 'available' ? 'ok' : 'danger'}>{m.status}</Badge>
                   </li>
                 ))}
               </ul>
             )}
-            <div className="border-t border-line/40 px-5 py-2.5">
-              <p className="font-mono text-[12px] text-ink-mute/60">demo library · stored locally</p>
-            </div>
           </CardBody>
         </Card>
       </div>

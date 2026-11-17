@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Body, Depends, Query
+from fastapi import APIRouter, Body, Depends, Query, Response
 
 from app.api.deps import experiments, page
 from app.api.schemas import Experiment, ExperimentCreate, ExperimentStart, ExperimentType, Page
@@ -38,3 +38,10 @@ def start(experiment_id: str, body: ExperimentStart = Body(default_factory=Exper
           svc: ExperimentService = Depends(experiments)):
     """Expensive experiment types return **409 CONFIRMATION_REQUIRED** unless `confirm` is true."""
     return svc.start(experiment_id, body.confirm)
+
+
+@router.delete("/{experiment_id}", status_code=204, summary="Delete an experiment (not while running)")
+def delete(experiment_id: str, svc: ExperimentService = Depends(experiments)):
+    """Benchmarks produced by the experiment are kept (their `experiment_id` becomes null)."""
+    svc.delete(experiment_id)
+    return Response(status_code=204)

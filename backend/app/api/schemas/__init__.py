@@ -32,12 +32,21 @@ class Page(BaseModel, Generic[T]):
 
 
 # ---------------------------------------------------------------- system
+class EngineConfig(BaseModel):
+    data_dir: str
+    db_path: str
+    model_dirs: list[str]
+    llamacpp_dir: str | None
+    max_concurrent_jobs: int
+
+
 class HealthResponse(BaseModel):
     status: Literal["ok"]
     engine: str
     version: str
     schema_version: int
     engines: list[EngineStatus]
+    config: EngineConfig
 
 
 # ---------------------------------------------------------------- models

@@ -1,31 +1,25 @@
 import { ChevronRight, Trash2 } from 'lucide-react';
-import type { LocalModel } from '@/types';
-import { Badge, type BadgeTone } from '@/components/ui/Badge';
+import type { ModelSummary } from '@/api/types';
+import { Badge } from '@/components/ui/Badge';
 import { Segmented } from '@/components/ui/Field';
-import { formatBytes, formatNumber, formatRelative } from '@/utils/format';
+import { fileName, formatContext, formatParams } from '@/api/adapters';
+import { formatBytes, formatRelative } from '@/utils/format';
 import type { SizeUnit } from '@/types';
 
-const statusTone: Record<LocalModel['status'], BadgeTone> = {
-  Ready: 'ok',
-  Indexed: 'accent',
-  Idle: 'neutral',
-  Unavailable: 'danger',
-};
-
 interface ModelTableProps {
-  models: LocalModel[];
+  models: ModelSummary[];
   unit: SizeUnit;
-  onOpen: (model: LocalModel) => void;
-  onDelete: (model: LocalModel) => void;
+  onOpen: (model: ModelSummary) => void;
+  onDelete: (model: ModelSummary) => void;
 }
 
 export function ModelTable({ models, unit, onOpen, onDelete }: ModelTableProps) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[860px] border-collapse text-left">
+      <table className="w-full min-w-[900px] border-collapse text-left">
         <thead>
           <tr className="border-b border-line/70">
-            {['Model', 'Format', 'Quantization', 'Size', 'Context', 'Status', 'Imported', ''].map(
+            {['Model', 'Arch', 'Params', 'Format', 'Quantization', 'Size', 'Context', 'Status', 'Imported', ''].map(
               (heading) => (
                 <th
                   key={heading}
@@ -45,36 +39,38 @@ export function ModelTable({ models, unit, onOpen, onDelete }: ModelTableProps) 
               onClick={() => onOpen(model)}
               className="group cursor-pointer border-b border-line/30 transition-colors last:border-0 hover:bg-surface2/30"
             >
-              <td className="py-2 pl-4 pr-3">
+              <td className="max-w-[300px] py-2 pl-4 pr-3">
                 <div className="truncate text-[13.5px] text-ink">{model.name}</div>
-                <div className="truncate text-[12.5px] text-ink-mute">
-                  {model.publisher} · {model.parameters} params
+                <div className="truncate font-mono text-[12px] text-ink-mute" title={model.path}>
+                  {fileName(model.path)}
                 </div>
               </td>
               <td className="px-3 py-2">
-                <span className="font-mono text-[12.5px] text-ink-mute">{model.format}</span>
+                <span className="font-mono text-[12.5px] text-ink-mute">{model.architecture ?? '—'}</span>
               </td>
               <td className="px-3 py-2">
-                <span className="font-mono text-[12.5px] text-ink-dim">{model.quantization}</span>
+                <span className="readout text-[13px] text-ink-dim">{formatParams(model.n_params)}</span>
               </td>
               <td className="px-3 py-2">
-                <span className="readout text-[13px] text-ink-dim">
-                  {formatBytes(model.sizeBytes, unit)}
-                </span>
+                <span className="font-mono text-[12.5px] uppercase text-ink-mute">{model.format}</span>
               </td>
               <td className="px-3 py-2">
-                <span className="readout text-[12.5px] text-ink-mute">
-                  {formatNumber(model.contextWindow / 1024, 0)}K
-                </span>
+                <span className="font-mono text-[12.5px] text-ink-dim">{model.quantization ?? '—'}</span>
               </td>
               <td className="px-3 py-2">
-                <Badge tone={statusTone[model.status]} dot>
-                  {model.status}
+                <span className="readout text-[13px] text-ink-dim">{formatBytes(model.file_size_bytes, unit)}</span>
+              </td>
+              <td className="px-3 py-2">
+                <span className="readout text-[12.5px] text-ink-mute">{formatContext(model.context_length)}</span>
+              </td>
+              <td className="px-3 py-2">
+                <Badge tone={model.status === 'available' ? 'ok' : 'danger'} dot>
+                  {model.status === 'available' ? 'Available' : 'File missing'}
                 </Badge>
               </td>
               <td className="px-3 py-2">
                 <span className="whitespace-nowrap font-mono text-[12px] text-ink-mute/80">
-                  {formatRelative(model.importedAt)}
+                  {formatRelative(model.created_at)}
                 </span>
               </td>
               <td className="py-2 pl-3 pr-4 text-right">
@@ -101,15 +97,17 @@ export function ModelTable({ models, unit, onOpen, onDelete }: ModelTableProps) 
   );
 }
 
+export type FormatValue = 'all' | 'gguf' | 'safetensors';
+
 /** Format filter used above the model table. */
 export function FormatFilter({
   value,
   onChange,
   counts,
 }: {
-  value: 'all' | 'GGUF' | 'Safetensors';
-  onChange: (value: 'all' | 'GGUF' | 'Safetensors') => void;
-  counts: { all: number; GGUF: number; Safetensors: number };
+  value: FormatValue;
+  onChange: (value: FormatValue) => void;
+  counts: Record<FormatValue, number>;
 }) {
   return (
     <Segmented
@@ -118,8 +116,8 @@ export function FormatFilter({
       onChange={onChange}
       options={[
         { value: 'all', label: 'All', count: counts.all },
-        { value: 'GGUF', label: 'GGUF', count: counts.GGUF },
-        { value: 'Safetensors', label: 'Safetensors', count: counts.Safetensors },
+        { value: 'gguf', label: 'GGUF', count: counts.gguf },
+        { value: 'safetensors', label: 'Safetensors', count: counts.safetensors },
       ]}
     />
   );

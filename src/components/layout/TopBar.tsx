@@ -3,6 +3,7 @@ import { Moon, Sun } from 'lucide-react';
 import { findNavItem } from '@/components/navigation/navConfig';
 import { ProvenanceBadge } from '@/components/ui/Badge';
 import { useAppStore } from '@/store/useAppStore';
+import { useEngineStore } from '@/store/useEngineStore';
 import { useClock } from '@/hooks/useTelemetry';
 import { formatTime } from '@/utils/format';
 
@@ -13,6 +14,7 @@ export function TopBar() {
   const updateSettings = useAppStore((state) => state.updateSettings);
   const now = useClock();
   const current = findNavItem(location.pathname);
+  const connection = useEngineStore((state) => state.connection);
 
   return (
     <header className="sticky top-0 z-20 flex h-[52px] shrink-0 items-center justify-between gap-4 border-b border-line/60 bg-base px-4 lg:px-6">
@@ -26,12 +28,7 @@ export function TopBar() {
 
       <div className="flex shrink-0 items-center gap-3.5">
         <span className="hidden md:inline-flex">
-          <ProvenanceBadge kind="demo" />
-        </span>
-
-        <span className="hidden items-center gap-1.5 font-mono text-[12px] uppercase tracking-[0.1em] text-warn/90 sm:inline-flex">
-          <span className="h-[4px] w-[4px] rounded-[1px] bg-warn" />
-          engine offline
+          <ProvenanceBadge kind={connection === 'online' ? 'live' : 'offline'} />
         </span>
 
         <span className="hidden font-mono text-[12.5px] tabular-nums text-ink-mute sm:inline">

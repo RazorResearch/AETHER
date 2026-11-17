@@ -1,39 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { TelemetrySnapshot } from '@/types';
-import { createTelemetrySnapshot } from '@/data/demo';
+import { useEffect, useMemo, useState } from 'react';
 import { useAppStore } from '@/store/useAppStore';
-
-/**
- * Simulated telemetry source.
- *
- * IMPORTANT: the browser sandbox cannot read GPU/VRAM counters. Every value
- * returned here is generated locally and must be presented as simulated.
- * The future Tauri shell (or a local Python bridge) will replace the generator
- * with `readSystemTelemetry()` from utils/systemBridge.ts.
- */
-export function useTelemetry(options?: { intervalMs?: number; live?: boolean }) {
-  const intervalMs = options?.intervalMs ?? 4000;
-  const live = options?.live ?? true;
-
-  const [snapshot, setSnapshot] = useState<TelemetrySnapshot>(() => createTelemetrySnapshot());
-  const [isLoading, setIsLoading] = useState(false);
-
-  const refresh = useCallback(() => {
-    setIsLoading(true);
-    window.setTimeout(() => {
-      setSnapshot(createTelemetrySnapshot());
-      setIsLoading(false);
-    }, 520);
-  }, []);
-
-  useEffect(() => {
-    if (!live) return;
-    const id = window.setInterval(() => setSnapshot(createTelemetrySnapshot()), intervalMs);
-    return () => window.clearInterval(id);
-  }, [intervalMs, live]);
-
-  return { snapshot, isLoading, refresh };
-}
 
 /** Ticking clock used by the workspace top bar. */
 export function useClock(intervalMs = 1000) {
@@ -75,14 +41,4 @@ export function useChartTheme() {
       ],
     };
   }, [theme]);
-}
-
-/** Delay used to demonstrate skeleton states without faking data. */
-export function useMountedLoading(delayMs = 420) {
-  const [isLoading, setIsLoading] = useState(true);
-  useEffect(() => {
-    const id = window.setTimeout(() => setIsLoading(false), delayMs);
-    return () => window.clearTimeout(id);
-  }, [delayMs]);
-  return isLoading;
 }

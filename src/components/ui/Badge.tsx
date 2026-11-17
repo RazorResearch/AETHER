@@ -58,30 +58,37 @@ export function Badge({
   );
 }
 
-/** Marks a value as generated locally rather than measured. */
-export function ProvenanceBadge({
-  kind = 'demo',
-  className,
-}: {
-  kind?: 'demo' | 'simulated' | 'estimated';
-  className?: string;
-}) {
-  const labels = {
-    demo: 'Demo data',
-    simulated: 'Simulated',
-    estimated: 'Estimated',
-  } as const;
+/** Marks where a value comes from. Every engine value carries one of these. */
+export type Provenance = 'live' | 'measured' | 'estimated' | 'proxy' | 'offline';
 
+const provenanceStyle: Record<Provenance, { label: string; dot: string; title: string }> = {
+  live: { label: 'Live', dot: 'bg-ok', title: 'Read from the AETHER engine on this machine.' },
+  measured: { label: 'Measured', dot: 'bg-ok', title: 'Measured by the engine on this machine.' },
+  estimated: {
+    label: 'Estimated',
+    dot: 'bg-warn',
+    title: 'Analytical estimate computed by the engine, not a measurement.',
+  },
+  proxy: {
+    label: 'Proxy',
+    dot: 'bg-warn',
+    title: 'Indirect indicator (e.g. weight-space error, KV bit-width); not a quality measurement.',
+  },
+  offline: { label: 'Engine offline', dot: 'bg-danger', title: 'The AETHER engine is not reachable.' },
+};
+
+export function ProvenanceBadge({ kind = 'live', className }: { kind?: Provenance; className?: string }) {
+  const p = provenanceStyle[kind];
   return (
     <span
       className={cn(
         'inline-flex items-center gap-1.5 rounded-sm border border-line/80 px-1.5 py-[2px] font-mono text-[11.5px] uppercase tracking-[0.12em] text-ink-mute',
         className,
       )}
-      title="Generated locally for interface preview. Not measured from real hardware or models."
+      title={p.title}
     >
-      <span className="h-[4px] w-[4px] rounded-[1px] bg-accent/80" />
-      {labels[kind]}
+      <span className={cn('h-[4px] w-[4px] rounded-[1px]', p.dot)} />
+      {p.label}
     </span>
   );
 }

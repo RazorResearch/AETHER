@@ -5,6 +5,7 @@ import { TopBar } from './TopBar';
 import { Toasts } from '@/components/ui/Toasts';
 import { useAppStore } from '@/store/useAppStore';
 import { toast } from '@/store/useToastStore';
+import { useEngineStore, useEngineSync } from '@/store/useEngineStore';
 
 /**
  * Application frame: persistent rail + context bar + scrollable content.
@@ -17,6 +18,7 @@ export function AppShell() {
   const location = useLocation();
   const navigate = useNavigate();
   const didLaunch = useRef(false);
+  useEngineSync();
 
   /* Apply the theme token set to the document. */
   useEffect(() => {
@@ -33,11 +35,19 @@ export function AppShell() {
     }
     if (settings.engineCheckOnLaunch) {
       window.setTimeout(() => {
-        toast.warning(
-          'Optimization engine unavailable',
-          'AETHER is running without the C++/CUDA engine. All metrics are demonstration data.',
-        );
-      }, 700);
+        const { connection, health } = useEngineStore.getState();
+        if (connection === 'online' && health) {
+          const llama = health.engines.find((e) => e.name === 'llama.cpp');
+          toast.success(
+            `Engine connected · v${health.version}`,
+            llama?.available
+              ? `llama.cpp ${llama.version ?? ''} available for benchmarks.`
+              : 'llama.cpp not found: analysis and estimates only, no benchmarks.',
+          );
+        } else {
+          toast.warning('Engine offline', 'Start the AETHER engine (backend/) to see real data.');
+        }
+      }, 1500);
     }
     // Intentionally mount-only: launch preferences are read from the persisted store.
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -20,13 +20,13 @@ const principles = [
     icon: <FlaskConical className="h-3.5 w-3.5" />,
     title: 'Measurement before claims',
     description:
-      'Every number carries its provenance. Demonstration values are labelled; nothing is presented as a measured result.',
+      'Every number carries its provenance (live, measured, estimated, proxy). Nothing is simulated: without the engine, the UI shows no data.',
   },
   {
     icon: <Lock className="h-3.5 w-3.5" />,
     title: 'Local by default',
     description:
-      'No account, no backend, no outbound request. Workspace state lives in this browser and nowhere else.',
+      'No account, no cloud. The UI talks only to the AETHER engine running on this machine; models are never uploaded.',
   },
   {
     icon: <Waypoints className="h-3.5 w-3.5" />,
@@ -40,20 +40,20 @@ const roadmap = [
   {
     phase: 'Phase 01',
     title: 'Interface foundation',
-    status: 'current',
+    status: 'done',
     detail: 'Navigation, library, configuration surfaces, benchmark comparison, activity ledger.',
   },
   {
     phase: 'Phase 02',
-    title: 'Native telemetry bridge',
-    status: 'next',
-    detail: 'Tauri host and Python sidecar exposing real GPU, RAM, CPU and storage counters.',
+    title: 'Python engine + live telemetry',
+    status: 'current',
+    detail: 'FastAPI engine: NVML/psutil telemetry, GGUF analysis, memory planner, llama.cpp benchmarks.',
   },
   {
     phase: 'Phase 03',
-    title: 'Optimization engine',
-    status: 'planned',
-    detail: 'C++/CUDA strategies: adaptive quantization, KV cache, offloading, speculative decoding.',
+    title: 'Optimization research',
+    status: 'next',
+    detail: 'Adaptive bit allocation validated by perplexity, KV cache studies, speculative decoding.',
   },
   {
     phase: 'Phase 04',
@@ -106,8 +106,8 @@ export function AboutPage() {
                 </Badge>
                 <Badge tone="muted">RazorResearch</Badge>
                 <Badge tone="muted">Apache 2.0 — planned</Badge>
-                <Badge tone="warn" dot>
-                  engine offline
+                <Badge tone="muted" dot>
+                  engine: backend/ (Python)
                 </Badge>
               </div>
             </div>
@@ -141,9 +141,9 @@ export function AboutPage() {
                 </span>
               </div>
               <p className="mt-1.5 text-[13px] leading-relaxed text-ink-dim">
-                Interface only. No optimization algorithm, quantization pipeline, CUDA kernel,
-                inference runtime or filesystem access is implemented. Buttons that would require an
-                engine report that it is unavailable.
+                The interface reads everything from the local engine: hardware telemetry, model
+                analysis, memory estimates, experiments and llama.cpp benchmarks. Features that need a
+                missing tool (e.g. llama.cpp) are disabled with the reason, never simulated.
               </p>
             </div>
           </CardBody>
@@ -202,8 +202,8 @@ export function AboutPage() {
               build.
             </p>
             <p className="text-[13px] leading-relaxed text-ink-mute">
-              Model weights referenced in the demo library belong to their respective publishers and
-              are not distributed by RazorResearch.
+              Model weights you register belong to their respective publishers and are never
+              distributed by RazorResearch.
             </p>
           </CardBody>
         </Card>

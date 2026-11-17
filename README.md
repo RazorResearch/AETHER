@@ -280,85 +280,70 @@ The project is being developed in parallel across two independent workstreams.
 | ------------------------ | ------------------------------------------- | -------------- |
 | Frontend                 | Application interface and user experience   | In development |
 | Backend                  | Model management, hardware analysis and API | In development |
-| Research engine          | Optimization algorithms and experimentation | Planned        |
-| Benchmark infrastructure | Reproducible evaluation                     | Planned        |
+| Research engine          | Optimization algorithms and experimentation | In development |
+| Benchmark infrastructure | Reproducible evaluation                     | In development |
 | Scientific publications  | Research reports and findings               | Planned        |
 
 **Important:** AETHER is not yet a production-ready optimization engine. Planned capabilities must not be interpreted as currently implemented features.
 
 ---
 
-## Frontend Interface (v0.1)
+## Running AETHER (engine + interface)
 
-The first interface version lives at the repository root and runs entirely without the
-Python backend. It is a complete, navigable desktop-style workspace whose data is
-demonstration data — no engine, no inference, no hardware detection.
-
-**Stack:** React 18, TypeScript (strict), Vite 5, Tailwind CSS 3, Recharts, lucide-react,
-Zustand with `localStorage` persistence, React Router (`HashRouter`, Tauri-ready).
-
-### Requirements and commands
-
-Node.js 18+ and npm. No environment variables, no backend, no account.
+The interface displays **only data read from the AETHER engine** (`backend/`, Python/FastAPI).
+There is no demonstration or simulated data: when the engine is not running, the UI says so
+and shows nothing.
 
 ```bash
-npm install      # install frontend dependencies
-npm run dev      # dev server on http://localhost:5173
-npm run typecheck
-npm run build    # type → production bundle in dist/
-npm run preview  # serve the production build
+# 1. engine — http://127.0.0.1:8765 (API docs at /docs)
+cd backend
+python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+AETHER_MODEL_DIRS=/path/to/models python -m app.cli serve
+
+# 2. interface — http://localhost:5173 (Vite proxies /api to the engine)
+npm install
+npm run dev
 ```
 
-### Implemented surfaces
+Optional: build llama.cpp with CUDA and set `AETHER_LLAMACPP_DIR` before starting the engine
+to enable benchmarks, perplexity and quantization (see `backend/README.md`). A packaged build
+can point the UI elsewhere with `VITE_AETHER_API`.
 
-- **Overview** — simulated VRAM/RAM/GPU/CPU indicators, 7/14/30-day demo throughput
-  series, workspace counters, chronological activity feed.
-- **Models** — local library table with search and format filters, file-assisted import
-  (name/size only, never read), manual registration, detail sheet, confirmed removal.
-- **Hardware** — GPU, RAM, CPU (per-core load) and storage panels fed by the simulation
-  layer, plus a telemetry-bridge test that fails honestly.
-- **Optimization** — model selection, 7 toggleable strategies, 3 objective profiles,
-  advanced parameters, VRAM/RAM/context/speed constraints, live summary. *Start
-  optimization* reports the missing engine instead of fabricating a result.
-- **Experiments** — creation with validation, strategy selection, status filters, detail
-  view with status changes, deletion; records persist locally.
-- **Benchmarks** — baseline vs optimized comparison (relative index + radar), documented
-  scientific metrics, local JSON report export carrying its own disclaimer.
-- **Activity** — filterable event ledger with search and confirmed purge.
-- **Settings** — dark/light themes, GB/GiB units, startup preferences, placeholder
-  directories, demo-data restore.
-- **About RazorResearch** — scope, roadmap and license posture.
+**Stack:** React 18, TypeScript (strict), Vite 5, Tailwind CSS 3, Recharts, lucide-react,
+Zustand, React Router (`HashRouter`, Tauri-ready).
+
+### What each page shows
+
+| Page | Source |
+|---|---|
+| Overview | Live hardware (sparklines = this session's samples), measured throughput, engine counters and events |
+| Models | Engine library: import by absolute path, folder scan, GGUF analysis (layers, heads, tensor mix, bits/weight) |
+| Hardware | NVML GPU (VRAM, utilisation, temperature, power), CPU per-core load, RAM/swap, volumes, driver/CUDA versions |
+| Optimization | Engine memory estimate (VRAM/RAM placement, OOM risk, KV cache, preset sizes) and ranked configuration search |
+| Experiments | Engine experiment types, background jobs with live progress, real results or explicit errors |
+| Benchmarks | llama-bench / llama-perplexity runs with full reproducibility records and A/B comparison |
+| Activity | Engine audit log |
+| Settings | UI preferences (browser) + read-only engine configuration |
+
+Every value carries its provenance: **Live**, **Measured**, **Estimated** or **Proxy**. Missing
+values are shown as “—”, never invented.
 
 ### Frontend architecture
 
 ```
 src/
-├── components/  layout · navigation · charts · cards · tables · ui
+├── api/         typed client (client.ts), engine types (types.ts), adapters
+├── store/       useEngineStore (engine data, polling) · useAppStore (UI prefs, persisted) · toasts
+├── components/  layout · navigation · engine · charts · cards · tables · ui
 ├── pages/       Overview, Models, Hardware, Optimization, Experiments,
 │                Benchmarks, Activity, Settings, About
-├── store/       Zustand workspace store (persisted) + toasts
-├── hooks/       telemetry, clock, chart theme, loading
-├── types/       domain contract shared with the future engine
-├── data/        demonstration datasets
-├── utils/       formatting, benchmark maths, system bridge contract
-└── assets/
+├── hooks/       clock, chart theme
+├── types/       UI-only types
+└── utils/       formatting, comparison maths
 ```
 
-`src/utils/systemBridge.ts` defines the `SystemBridge` contract (`isAvailable`,
-`readTelemetry`) that a Tauri command or the Python sidecar must implement; it is the
-only replacement point for real telemetry.
-
-### Demonstration data policy
-
-Every metric on screen is generated locally and labelled (`Demo data`, `Simulated`,
-`Demo series`). Benchmarks include deliberate regressions (perplexity, accuracy) so the
-interface never implies a free win. Nothing is sent to a third-party service.
-
-### Known limitations
-
-No optimization engine, no CUDA/C++ kernels, no model inference, no filesystem or GPU
-access, English-only interface. Workspace state lives in `localStorage` under
-`aether.workspace.v1`.
+The API contract is documented in `docs/API_CONTRACT.md`.
 
 ---
 

@@ -97,9 +97,13 @@ Result: `GET /optimization/{job_id}/results` → `{ job_id, status, result }` (`
       "details": { "binaries": {} }, "reason": "No llama.cpp binaries found (set AETHER_LLAMACPP_DIR)." },
     { "name": "pytorch", "available": false, "version": null, "capabilities": {}, "details": {},
       "reason": "PyTorch is not installed (optional dependency: pip install torch)." }
-  ]
+  ],
+  "config": { "data_dir": "/home/me/.aether", "db_path": "/home/me/.aether/aether.db",
+              "model_dirs": ["/home/me/models"], "llamacpp_dir": null, "max_concurrent_jobs": 1 }
 }
 ```
+
+`config` is read-only (engine environment variables).
 
 Use it as the "engine connected" indicator. `GET /system/engines` returns only the `engines` array.
 
@@ -245,8 +249,9 @@ interface Experiment {
 | `GET /experiments?status&type&limit&offset` | — | `Page<Experiment>` |
 | `GET /experiments/types` | — | `ExperimentType[]` (with JSON Schema of `config`, usable to build forms) |
 | `POST /experiments` | `{ name, type, hypothesis?, config }` | `201 Experiment` (status `draft`) |
-| `GET /experiments/{experiment_id}` | — | `Experiment` (includes live `job` progress) |
+| `GET /experiments/{experiment_id}` | — | `Experiment` (includes live `job` progress; so does the list) |
 | `POST /experiments/{experiment_id}/start` | `{ "confirm"?: false }` | `202 Experiment` |
+| `DELETE /experiments/{experiment_id}` | — | `204` (`409 ALREADY_RUNNING` while queued/running; its benchmarks are kept) |
 
 Available types (v0.1):
 

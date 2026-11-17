@@ -1,359 +1,311 @@
 import { useState } from 'react';
-import {
-  Activity,
-  AlertTriangle,
-  ChevronRight,
-  Cpu,
-  HardDrive,
-  MemoryStick,
-  Plug,
-  RefreshCw,
-  Thermometer,
-} from 'lucide-react';
+import { AlertTriangle, Cpu, HardDrive, MemoryStick, RefreshCw, Thermometer, Zap } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge, ProvenanceBadge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, CardBody, CardHeader } from '@/components/ui/Card';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { ProgressBar } from '@/components/ui/ProgressBar';
-import { Segmented } from '@/components/ui/Field';
-import { InfoHint } from '@/components/ui/Tooltip';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { Sparkline } from '@/components/charts/Sparkline';
 import { Gauge } from '@/components/charts/Gauge';
 import { StatTile } from '@/components/cards/StatTile';
-import { useTelemetry } from '@/hooks/useTelemetry';
+import { EngineOffline } from '@/components/engine/EngineOffline';
 import { useAppStore } from '@/store/useAppStore';
-import { toast } from '@/store/useToastStore';
-import { TELEMETRY_BRIDGE } from '@/utils/systemBridge';
-import { formatGigabytes, formatNumber, formatPercent, formatTime, percentOf } from '@/utils/format';
+import { useEngineStore } from '@/store/useEngineStore';
+import { formatBytes, formatNumber, formatPercent, formatTime, percentOf } from '@/utils/format';
 
-/**
- * Hardware dashboard.
- *
- * Every number is simulated by hooks/useTelemetry. The page states this
- * explicitly and offers a bridge test that fails honestly.
- */
+const dash = '—';
+
+/** Hardware dashboard — every value is read by the engine (NVML, psutil). */
 export function HardwarePage() {
-  const [mode, setMode] = useState<'live' | 'paused'>('live');
-  const { snapshot, isLoading, refresh } = useTelemetry({ live: mode === 'live', intervalMs: 4200 });
-  const unit = useAppStore((state) => state.settings.unit);
+  const hw = useEngineStore((s) => s.hardware);
+  const history = useEngineStore((s) => s.hardwareHistory);
+  const health = useEngineStore((s) => s.health);
+  const connection = useEngineStore((s) => s.connection);
+  const refreshHardware = useEngineStore((s) => s.refreshHardware);
+  const unit = useAppStore((s) => s.settings.unit);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const vramPct = percentOf(snapshot.vramUsedGb, snapshot.vramTotalGb);
-  const ramPct = percentOf(snapshot.ramUsedGb, snapshot.ramTotalGb);
-  const diskPct = percentOf(snapshot.diskUsedGb, snapshot.diskTotalGb);
-  const diskFree = snapshot.diskTotalGb - snapshot.diskUsedGb;
-
-  const vramTrend = Array.from({ length: 14 }, (_, index) =>
-    Math.max(2, vramPct + Math.sin(index * 0.7) * 8),
-  );
-
-  const testBridge = () => {
-    toast.error(
-      'Telemetry bridge unavailable',
-      'No native host is attached. A Tauri/Python bridge is required to read real GPU counters.',
-    );
+  const refresh = async () => {
+    setRefreshing(true);
+    await refreshHardware();
+    setRefreshing(false);
   };
+
+  const gpu = hw?.gpus[0];
+  const vramPct = gpu ? percentOf(gpu.vram_used_bytes ?? 0, gpu.vram_total_bytes ?? 0) : 0;
+  const ramPct = hw ? hw.memory.percent : 0;
+  const vramTrend = history.map((h) => h.vramPct).filter((v): v is number => v != null);
+  const ramTrend = history.map((h) => h.ramPct);
+  const cpuTrend = history.map((h) => h.cpuUtil).filter((v): v is number => v != null);
 
   return (
     <div className="animate-fade-in">
       <PageHeader
         title="Hardware"
-        subtitle="Device envelope for local inference. Values are simulated until a native bridge is attached."
-        meta={<ProvenanceBadge kind="simulated" />}
+        subtitle="Device envelope for local inference, read by the AETHER engine (NVML, psutil)."
+        meta={<ProvenanceBadge kind={connection === 'online' ? 'live' : 'offline'} />}
         actions={
-          <>
-            <Segmented
-              ariaLabel="Telemetry mode"
-              value={mode}
-              onChange={setMode}
-              options={[
-                { value: 'live', label: 'Live' },
-                { value: 'paused', label: 'Paused' },
-              ]}
-            />
-            <Button
-              variant="secondary"
-              icon={<RefreshCw className={isLoading ? 'animate-spin' : undefined} />}
-              onClick={refresh}
-              loading={isLoading}
-            >
-              Refresh
-            </Button>
-          </>
+          <Button
+            variant="secondary"
+            icon={<RefreshCw className={refreshing ? 'animate-spin' : undefined} />}
+            onClick={() => void refresh()}
+            disabled={connection !== 'online'}
+          >
+            Refresh
+          </Button>
         }
       />
 
-      <div className="mb-3 flex items-start gap-2.5 border-l-2 border-warn/60 pl-3">
-        <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-warn/80" />
-        <div className="text-[13.5px] leading-relaxed text-ink-dim">
-          <span className="font-medium text-warn">Simulated telemetry.</span> A browser cannot read GPU
-          VRAM, temperatures or per-core load. AETHER generates these values locally and never claims
-          they were detected. Device names are placeholders.
+      <EngineOffline />
+
+      {connection === 'online' && !hw && (
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+          <Skeleton className="h-[220px]" />
+          <Skeleton className="h-[220px]" />
         </div>
-      </div>
+      )}
 
-      <div className="grid grid-cols-1 gap-3 xl:grid-cols-12">
-        {/* ------------------------------- GPU ------------------------------- */}
-        <Card className="xl:col-span-7">
-          <CardHeader
-            title={snapshot.gpuName}
-            hint="Placeholder descriptor — no device query is performed."
-            action={<Badge tone="warn" dot>simulated</Badge>}
-          />
-          <CardBody>
-            <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-              <div className="flex items-center gap-4">
-                <Gauge
-                  value={vramPct}
-                  size={112}
-                  thickness={8}
-                  valueLabel={formatNumber(snapshot.vramUsedGb, 1)}
-                  unit={unit}
-                  ariaLabel="GPU VRAM usage"
-                />
-                <div>
-                  <div className="font-mono text-[12px] uppercase tracking-[0.16em] text-ink-mute">
-                    vram pressure
-                  </div>
-                  <div className="readout mt-1 text-[14px] text-ink">
-                    {formatNumber(snapshot.vramUsedGb, 1)} / {formatGigabytes(snapshot.vramTotalGb, unit)}
-                  </div>
-                  <div className="mt-1 text-[13px] text-ink-mute">
-                    {formatGigabytes(snapshot.vramTotalGb - snapshot.vramUsedGb, unit)} free
-                  </div>
-                  <div className="mt-3">
-                    <Sparkline values={vramTrend} width={122} height={26} tone="accent" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid flex-1 grid-cols-2 gap-x-5 gap-y-3.5">
-                <StatTile
-                  label="Utilization"
-                  value={formatPercent(snapshot.gpuUtilization)}
-                  detail="SM busy time"
-                />
-                <StatTile
-                  label="Temperature"
-                  value={
-                    <span className="flex items-baseline gap-1">
-                      {snapshot.gpuTemperatureC}
-                      <span className="text-[12.5px] text-ink-mute">°C</span>
-                    </span>
-                  }
-                  detail="Die sensor"
-                  badge={<Thermometer className="h-3 w-3 text-ink-mute/60" />}
-                />
-                <StatTile
-                  label="Memory type"
-                  value={<span className="text-[13.5px]">GDDR class</span>}
-                  detail="Placeholder"
-                />
-                <StatTile
-                  label="Sampling"
-                  value={<span className="text-[13.5px]">{mode === 'live' ? '4.2 s' : 'paused'}</span>}
-                  detail={`last ${formatTime(snapshot.capturedAt)}`}
-                />
-              </div>
+      {hw && (
+        <>
+          {hw.warnings.length > 0 && (
+            <div className="mb-3 flex items-start gap-2.5 border-l-2 border-warn/60 pl-3">
+              <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-warn/80" />
+              <ul className="text-[13px] leading-relaxed text-ink-dim">
+                {hw.warnings.map((w) => (
+                  <li key={w}>{w}</li>
+                ))}
+              </ul>
             </div>
+          )}
 
-            <div className="mt-4 border-t border-line/40 pt-3">
-              <div className="mb-1.5 flex items-center justify-between font-mono text-[12px] uppercase tracking-[0.12em] text-ink-mute">
-                <span>vram allocation</span>
-                <span>{formatPercent(vramPct, 1)}</span>
-              </div>
-              <ProgressBar value={vramPct} height="sm" tone={vramPct > 85 ? 'danger' : 'accent'} />
-              <div className="mt-2 flex justify-between font-mono text-[12px] uppercase tracking-[0.1em] text-ink-mute/60">
-                <span>0</span>
-                <span>{formatGigabytes(snapshot.vramTotalGb, unit)}</span>
-              </div>
-            </div>
-          </CardBody>
-        </Card>
-
-        {/* --------------------------- memory + disk -------------------------- */}
-        <div className="space-y-3 xl:col-span-5">
-          <Card>
-            <CardHeader
-              title="Host RAM"
-              action={<Badge tone="muted" mono>simulated</Badge>}
-            />
-            <CardBody>
-              <div className="flex items-end justify-between">
-                <div>
-                  <div className="readout text-[22px] font-medium leading-none text-ink">
-                    {formatNumber(snapshot.ramUsedGb, 1)}
-                    <span className="ml-1 text-[13px] text-ink-mute">{unit} used</span>
-                  </div>
-                  <div className="mt-1.5 text-[13px] text-ink-mute">
-                    {formatGigabytes(snapshot.ramTotalGb - snapshot.ramUsedGb, unit)} available of{' '}
-                    {formatGigabytes(snapshot.ramTotalGb, unit)}
-                  </div>
-                </div>
-                <MemoryStick className="h-4 w-4 text-ink-mute/60" />
-              </div>
-              <ProgressBar value={ramPct} height="sm" tone="glacier" className="mt-3" />
-              <div className="mt-2 flex justify-between font-mono text-[12px] text-ink-mute/70">
-                <span>{formatPercent(ramPct, 1)} engaged</span>
-                <span>page cache excluded</span>
-              </div>
-            </CardBody>
-          </Card>
-
-          <Card>
-            <CardHeader
-              title="Workspace volume"
-              action={<HardDrive className="h-3.5 w-3.5 text-ink-mute/60" />}
-            />
-            <CardBody>
-              <div className="flex items-end justify-between">
-                <div className="readout text-[22px] font-medium leading-none text-ink">
-                  {formatNumber(diskFree, 0)}
-                  <span className="ml-1 text-[13px] text-ink-mute">{unit} free</span>
-                </div>
-                <Badge tone="muted" mono>
-                  sim volume
-                </Badge>
-              </div>
-              <ProgressBar
-                value={diskPct}
-                height="sm"
-                tone={diskPct > 90 ? 'danger' : 'ok'}
-                className="mt-3"
+          <div className="grid grid-cols-1 gap-3 xl:grid-cols-12">
+            {/* ------------------------------- GPU ------------------------------- */}
+            <Card className="xl:col-span-7">
+              <CardHeader
+                title={gpu?.name ?? 'No NVIDIA GPU detected'}
+                hint={
+                  gpu
+                    ? `GPU ${gpu.index} · compute capability ${gpu.compute_capability ?? dash} · ${gpu.uuid ?? ''}`
+                    : 'NVML is unavailable on this machine: AETHER runs in CPU mode.'
+                }
+                action={<Badge tone={hw.accelerator === 'cuda' ? 'ok' : 'neutral'} dot>{hw.accelerator}</Badge>}
               />
-              <div className="mt-2 flex justify-between font-mono text-[12px] text-ink-mute/70">
-                <span>{formatGigabytes(snapshot.diskUsedGb, unit)} used</span>
-                <span>{formatGigabytes(snapshot.diskTotalGb, unit)} total</span>
-              </div>
-            </CardBody>
-          </Card>
-        </div>
-
-        {/* ------------------------------- CPU ------------------------------- */}
-        <Card className="xl:col-span-7">
-          <CardHeader
-            title={snapshot.cpuName}
-            hint="Core topology is a placeholder: 16 logical cores."
-            action={<Badge tone="warn" dot>simulated</Badge>}
-          />
-          <CardBody>
-            <div className="flex flex-wrap items-end justify-between gap-3">
-              <div>
-                <div className="readout text-[22px] font-medium leading-none text-ink">
-                  {formatPercent(snapshot.cpuUtilization)}
-                  <span className="ml-2 text-[13px] font-normal text-ink-mute">
-                    aggregate load
-                  </span>
-                </div>
-                <div className="mt-1.5 flex items-center gap-1.5 text-[13px] text-ink-mute">
-                  <Cpu className="h-3 w-3" />
-                  {snapshot.cpuCores} logical cores ·{' '}
-                  <InfoHint
-                    label="topology"
-                    content="Per-core values are generated independently and do not correspond to a real processor topology. A native bridge will enumerate physical cores and SMT siblings."
+              <CardBody>
+                {!gpu ? (
+                  <EmptyState
+                    compact
+                    icon={<Cpu />}
+                    title="CPU-only mode"
+                    description="No NVIDIA device was reported by NVML. Inference and benchmarks will run on the CPU."
                   />
-                </div>
-              </div>
-              <span className="font-mono text-[12px] uppercase tracking-[0.14em] text-ink-mute/60">
-                sample {formatTime(snapshot.capturedAt)}
-              </span>
-            </div>
+                ) : (
+                  <>
+                    <div className="flex flex-col gap-5 2xl:flex-row 2xl:items-center">
+                      <div className="flex items-center gap-4">
+                        <Gauge
+                          value={vramPct}
+                          size={112}
+                          thickness={8}
+                          valueLabel={
+                            gpu.vram_used_bytes != null
+                              ? formatNumber(gpu.vram_used_bytes / (unit === 'GB' ? 1e9 : 1024 ** 3), 1)
+                              : dash
+                          }
+                          unit={unit}
+                          ariaLabel="GPU VRAM usage"
+                        />
+                        <div>
+                          <div className="font-mono text-[12px] uppercase tracking-[0.16em] text-ink-mute">
+                            vram in use (all processes)
+                          </div>
+                          <div className="readout mt-1 text-[14px] text-ink">
+                            {gpu.vram_used_bytes != null ? formatBytes(gpu.vram_used_bytes, unit) : dash} /{' '}
+                            {gpu.vram_total_bytes != null ? formatBytes(gpu.vram_total_bytes, unit) : dash}
+                          </div>
+                          <div className="mt-1 text-[13px] text-ink-mute">
+                            {gpu.vram_free_bytes != null ? formatBytes(gpu.vram_free_bytes, unit) : dash} free
+                          </div>
+                          <div className="mt-3">
+                            <Sparkline values={vramTrend} width={122} height={26} tone="accent" />
+                          </div>
+                        </div>
+                      </div>
 
-            <div className="mt-4 grid grid-cols-8 gap-1.5">
-              {snapshot.coreLoad.map((load, index) => (
-                <div key={index} className="group relative">
-                  <div
-                    title={`Core ${index} · ${load}%`}
-                    className="relative h-7 overflow-hidden rounded-[3px] border border-line/60 bg-surface2 transition-colors hover:border-accent/40"
-                  >
-                    <div
-                      className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-accent/45 to-accent/80 transition-[height] duration-500"
-                      style={{ height: `${Math.max(6, load)}%` }}
-                    />
+                      <div className="grid flex-1 grid-cols-2 gap-x-5 gap-y-3.5 sm:grid-cols-4 2xl:grid-cols-2">
+                        <StatTile
+                          label="Utilization"
+                          value={gpu.utilization_gpu_percent != null ? formatPercent(gpu.utilization_gpu_percent) : dash}
+                          detail={
+                            gpu.utilization_memory_percent != null
+                              ? `memory controller ${formatPercent(gpu.utilization_memory_percent)}`
+                              : 'SM busy time'
+                          }
+                        />
+                        <StatTile
+                          label="Temperature"
+                          value={
+                            gpu.temperature_c != null ? (
+                              <span className="flex items-baseline gap-1">
+                                {gpu.temperature_c}
+                                <span className="text-[12.5px] text-ink-mute">°C</span>
+                              </span>
+                            ) : (
+                              dash
+                            )
+                          }
+                          detail="Die sensor"
+                          badge={<Thermometer className="h-3 w-3 text-ink-mute/60" />}
+                        />
+                        <StatTile
+                          label="Power"
+                          value={gpu.power_draw_w != null ? `${formatNumber(gpu.power_draw_w, 1)} W` : dash}
+                          detail={gpu.power_limit_w != null ? `limit ${formatNumber(gpu.power_limit_w, 0)} W` : undefined}
+                          badge={<Zap className="h-3 w-3 text-ink-mute/60" />}
+                        />
+                        <StatTile
+                          label="Sampling"
+                          value={<span className="text-[13.5px]">3 s</span>}
+                          detail={`last ${formatTime(hw.captured_at)} · energy counter ${gpu.energy_counter_supported ? 'yes' : 'no'}`}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="mt-4 border-t border-line/40 pt-3">
+                      <div className="mb-1.5 flex items-center justify-between font-mono text-[12px] uppercase tracking-[0.12em] text-ink-mute">
+                        <span>vram allocation</span>
+                        <span>{formatPercent(vramPct, 1)}</span>
+                      </div>
+                      <ProgressBar value={vramPct} height="sm" tone={vramPct > 85 ? 'danger' : 'accent'} />
+                    </div>
+                  </>
+                )}
+              </CardBody>
+            </Card>
+
+            {/* --------------------------- memory + disk -------------------------- */}
+            <div className="space-y-3 xl:col-span-5">
+              <Card>
+                <CardHeader title="Host RAM" action={<MemoryStick className="h-3.5 w-3.5 text-ink-mute/60" />} />
+                <CardBody>
+                  <div className="flex items-end justify-between">
+                    <div>
+                      <div className="readout text-[22px] font-medium leading-none text-ink">
+                        {formatBytes(hw.memory.used_bytes, unit)}
+                        <span className="ml-1 text-[13px] text-ink-mute">used</span>
+                      </div>
+                      <div className="mt-1.5 text-[13px] text-ink-mute">
+                        {formatBytes(hw.memory.available_bytes, unit)} available of{' '}
+                        {formatBytes(hw.memory.total_bytes, unit)}
+                      </div>
+                    </div>
+                    <Sparkline values={ramTrend} width={96} height={22} tone="glacier" />
                   </div>
-                  <span className="mt-1 block text-center font-mono text-[11.5px] text-ink-mute/60">
-                    {String(index).padStart(2, '0')}
-                  </span>
-                </div>
-              ))}
+                  <ProgressBar value={ramPct} height="sm" tone="glacier" className="mt-3" />
+                  <div className="mt-2 flex justify-between font-mono text-[12px] text-ink-mute/70">
+                    <span>{formatPercent(ramPct, 1)} engaged</span>
+                    <span>
+                      swap {formatBytes(hw.memory.swap_used_bytes, unit)} / {formatBytes(hw.memory.swap_total_bytes, unit)}
+                    </span>
+                  </div>
+                </CardBody>
+              </Card>
+
+              <Card>
+                <CardHeader title="Volumes" hint="Engine data and model directories" action={<HardDrive className="h-3.5 w-3.5 text-ink-mute/60" />} />
+                <CardBody className="space-y-3">
+                  {hw.disks.length === 0 && <p className="text-[13px] text-ink-mute">No volume reported.</p>}
+                  {hw.disks.map((d) => {
+                    const p = percentOf(d.used_bytes, d.total_bytes);
+                    return (
+                      <div key={d.path}>
+                        <div className="flex items-baseline justify-between gap-2">
+                          <span className="truncate font-mono text-[12.5px] text-ink-dim" title={d.path}>
+                            {d.path}
+                          </span>
+                          <span className="readout shrink-0 text-[13px] text-ink">
+                            {formatBytes(d.free_bytes, unit)} free
+                          </span>
+                        </div>
+                        <ProgressBar value={p} height="sm" tone={p > 90 ? 'danger' : 'ok'} className="mt-1.5" />
+                        <div className="mt-1 flex justify-between font-mono text-[12px] text-ink-mute/70">
+                          <span>{formatBytes(d.used_bytes, unit)} used</span>
+                          <span>{formatBytes(d.total_bytes, unit)} total</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </CardBody>
+              </Card>
             </div>
 
-            <div className="mt-3 flex items-center justify-between border-t border-line/40 pt-2.5">
-              <div className="flex items-center gap-3 font-mono text-[12px] uppercase tracking-[0.1em] text-ink-mute/70">
-                <span className="flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-[1px] bg-accent/80" /> active
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-[1px] bg-surface2" /> idle
-                </span>
-              </div>
-              <span className="font-mono text-[12px] uppercase tracking-[0.1em] text-ink-mute/60">
-                offload target surface
-              </span>
-            </div>
-          </CardBody>
-        </Card>
-
-        {/* -------------------------- bridge contract ------------------------ */}
-        <Card className="xl:col-span-5">
-          <CardHeader
-            title="Telemetry bridge"
-            hint="Contract prepared for the desktop build."
-            action={<Badge tone="neutral" dot>not attached</Badge>}
-          />
-          <CardBody className="space-y-2.5">
-            {[
-              {
-                icon: <Plug className="h-3.5 w-3.5" />,
-                name: 'Tauri command',
-                spec: 'invoke("read_telemetry")',
-                status: 'ready to wire',
-              },
-              {
-                icon: <Activity className="h-3.5 w-3.5" />,
-                name: 'Python sidecar',
-                spec: 'GET 127.0.0.1/api/hardware',
-                status: 'not configured',
-              },
-              {
-                icon: <Cpu className="h-3.5 w-3.5" />,
-                name: 'NVML / CUDA counters',
-                spec: 'engine process only',
-                status: 'engine missing',
-              },
-            ].map((row) => (
-              <div
-                key={row.name}
-                className="flex items-center gap-3 rounded-md border border-line/60 bg-raised/40 px-3 py-2.5"
-              >
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded border border-line/70 bg-surface2/60 text-ink-mute">
-                  {row.icon}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="text-[13.5px] text-ink-dim">{row.name}</div>
-                  <div className="truncate font-mono text-[12px] text-ink-mute/80">{row.spec}</div>
+            {/* ------------------------------- CPU ------------------------------- */}
+            <Card className="xl:col-span-7">
+              <CardHeader
+                title={hw.cpu.model ?? 'CPU'}
+                hint={`${hw.cpu.physical_cores ?? dash} physical · ${hw.cpu.logical_cores ?? dash} logical cores · ${hw.cpu.architecture ?? ''}${hw.cpu.frequency_mhz ? ` · ${formatNumber(hw.cpu.frequency_mhz, 0)} MHz` : ''}`}
+              />
+              <CardBody>
+                <div className="flex flex-wrap items-end justify-between gap-3">
+                  <div className="readout text-[22px] font-medium leading-none text-ink">
+                    {hw.cpu.utilization_percent != null ? formatPercent(hw.cpu.utilization_percent) : dash}
+                    <span className="ml-2 text-[13px] font-normal text-ink-mute">aggregate load</span>
+                  </div>
+                  <Sparkline values={cpuTrend} width={140} height={24} tone="warn" />
                 </div>
-                <span className="shrink-0 font-mono text-[11.5px] uppercase tracking-[0.1em] text-ink-mute/70">
-                  {row.status}
-                </span>
-              </div>
-            ))}
 
-            <p className="text-[13px] leading-relaxed text-ink-mute">
-              {TELEMETRY_BRIDGE.reason}
-            </p>
+                <div className="mt-4 grid grid-cols-8 gap-1.5 sm:grid-cols-12">
+                  {hw.cpu.per_core_utilization_percent.map((load, index) => (
+                    <div key={index}>
+                      <div
+                        title={`Core ${index} · ${formatNumber(load, 0)}%`}
+                        className="relative h-7 overflow-hidden rounded-[3px] border border-line/60 bg-surface2"
+                      >
+                        <div
+                          className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-accent/45 to-accent/80 transition-[height] duration-500"
+                          style={{ height: `${Math.max(4, load)}%` }}
+                        />
+                      </div>
+                      <span className="mt-1 block text-center font-mono text-[11.5px] text-ink-mute/60">
+                        {String(index).padStart(2, '0')}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-3 border-t border-line/40 pt-2.5 font-mono text-[12px] text-ink-mute/70">
+                  per-logical-core load sampled over 100 ms · {formatTime(hw.captured_at)}
+                </p>
+              </CardBody>
+            </Card>
 
-            <Button
-              variant="outline"
-              className="w-full"
-              icon={<ChevronRight />}
-              iconRight={<span />}
-              onClick={testBridge}
-            >
-              Test bridge connection
-            </Button>
-          </CardBody>
-        </Card>
-      </div>
+            {/* ------------------------- software stack ------------------------- */}
+            <Card className="xl:col-span-5">
+              <CardHeader title="Software stack" hint="Versions reported by the engine host" />
+              <CardBody className="space-y-2">
+                {[
+                  ['OS', `${hw.software.os} ${hw.software.os_release}`],
+                  ['NVIDIA driver', hw.software.nvidia_driver_version],
+                  ['CUDA (driver max)', hw.software.cuda_driver_version],
+                  ['CUDA runtime (PyTorch)', hw.software.cuda_runtime_version],
+                  ['NVML', hw.software.nvml_version],
+                  ['Python', hw.software.python],
+                  ['PyTorch', hw.software.torch_version],
+                  ...(health?.engines ?? []).map((e) => [
+                    e.name,
+                    e.available ? `available${e.version ? ` · ${e.version}` : ''}` : 'not available',
+                  ]),
+                ].map(([label, value]) => (
+                  <div key={label} className="flex items-baseline justify-between gap-3 border-b border-line/30 pb-1.5 last:border-0">
+                    <span className="font-mono text-[12px] uppercase tracking-[0.1em] text-ink-mute">{label}</span>
+                    <span className="truncate text-right text-[13px] text-ink-dim">{value ?? dash}</span>
+                  </div>
+                ))}
+              </CardBody>
+            </Card>
+          </div>
+        </>
+      )}
     </div>
   );
 }

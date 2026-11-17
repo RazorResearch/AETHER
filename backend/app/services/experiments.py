@@ -16,18 +16,25 @@ class ExperimentService:
     def types(self) -> list[dict]:
         return [t[0].model_dump() for t in TYPES.values()]
 
+    def _with_job(self, e: dict) -> dict:
+        if e.get("job_id"):
+            job = self.s.db.get("optimization_jobs", e["job_id"])
+            if job:
+                e["job"] = {k: job[k] for k in ("id", "status", "progress", "stage", "error")}
+                # the job row is final a few ms before the experiment row is updated
+                if job["status"] in ("completed", "failed", "cancelled") and e["status"] in ("queued", "running"):
+                    e["status"] = job["status"]
+        return e
+
     def list(self, status: str | None = None, type_: str | None = None, limit: int = 100, offset: int = 0):
-        return self.s.db.list("experiments", {"status": status, "type": type_}, limit=limit, offset=offset)
+        items, total = self.s.db.list("experiments", {"status": status, "type": type_}, limit=limit, offset=offset)
+        return [self._with_job(e) for e in items], total
 
     def get(self, exp_id: str) -> dict:
         e = self.s.db.get("experiments", exp_id)
         if e is None:
             raise NotFoundError(f"Experiment '{exp_id}' not found", details={"experiment_id": exp_id})
-        if e.get("job_id"):
-            job = self.s.db.get("optimization_jobs", e["job_id"])
-            if job:
-                e["job"] = {k: job[k] for k in ("id", "status", "progress", "stage", "error")}
-        return e
+        return self._with_job(e)
 
     def create(self, name: str, type_: str, config: dict, hypothesis: str | None = None) -> dict:
         cfg = validate_config(type_, config)
@@ -41,6 +48,16 @@ class ExperimentService:
         self.s.activity.log("experiment", "experiment.created", f"Experiment '{name}' created ({type_})", "info",
                             {"experiment_id": row["id"]})
         return row
+
+    def delete(self, exp_id: str) -> None:
+        exp = self.get(exp_id)
+        if exp["status"] in ("queued", "running"):
+            raise ConflictError("Cancel the running job before deleting the experiment", code="ALREADY_RUNNING")
+        with self.s.db.connect() as c:
+            c.execute("UPDATE benchmarks SET experiment_id=NULL WHERE experiment_id=?", (exp_id,))
+        self.s.db.delete("experiments", exp_id)
+        self.s.activity.log("experiment", "experiment.deleted", f"Experiment '{exp['name']}' deleted", "info",
+                            {"experiment_id": exp_id})
 
     def start(self, exp_id: str, confirm: bool = False) -> dict:
         exp = self.get(exp_id)

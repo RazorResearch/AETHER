@@ -19,6 +19,7 @@ def _wait(c, job_id):
 def test_health_and_hardware_cpu_mode(client):
     h = client.get(f"{V}/system/health").json()
     assert h["status"] == "ok" and h["schema_version"] == 1
+    assert h["config"]["max_concurrent_jobs"] == 1 and h["config"]["data_dir"]
     assert {e["name"] for e in h["engines"]} == {"llama.cpp", "pytorch"}
     hw = client.get(f"{V}/system/hardware").json()
     assert hw["accelerator"] == "cpu" and hw["gpus"] == []
@@ -114,6 +115,8 @@ def test_experiment_sensitivity_flow(client, tiny_gguf):
     assert e["status"] == "completed" and e["result"]["validated"] is False
     assert e["job"]["status"] == "completed"
     assert client.get(f"{V}/experiments", params={"status": "completed"}).json()["total"] == 1
+    assert client.delete(f"{V}/experiments/{e['id']}").status_code == 204
+    assert client.get(f"{V}/experiments/{e['id']}").status_code == 404
 
 
 def test_experiment_validation_and_confirmation(client_llama, tiny_gguf):

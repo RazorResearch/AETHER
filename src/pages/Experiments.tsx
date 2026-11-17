@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { FlaskConical, Info, Plus, Trash2, X } from 'lucide-react';
+import { AlertTriangle, FlaskConical, Play, Plus, Square, Trash2 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge, ProvenanceBadge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -7,71 +7,65 @@ import { Card, CardBody, CardHeader } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SelectInput, Segmented, TextArea, TextInput } from '@/components/ui/Field';
 import { Modal } from '@/components/ui/Modal';
-import { ExperimentTable, experimentStatusTone } from '@/components/tables/ExperimentTable';
+import { ProgressBar } from '@/components/ui/ProgressBar';
+import { ExperimentTable } from '@/components/tables/ExperimentTable';
+import { EngineOffline } from '@/components/engine/EngineOffline';
+import { api, ApiError, errorMessage } from '@/api/client';
+import type { Experiment, ExperimentStatus, ExperimentType, ModelSummary } from '@/api/types';
+import { jobStatusLabel, jobStatusTone, modelLabel } from '@/api/adapters';
 import { useAppStore } from '@/store/useAppStore';
-import { experimentStatuses } from '@/store/defaults';
-import { optimizationStrategies, optimizationTargets } from '@/data/demo';
+import { useEngineStore } from '@/store/useEngineStore';
 import { toast } from '@/store/useToastStore';
-import type { Experiment, ExperimentStatus, OptimizationStrategyId } from '@/types';
-import { formatDateTime, formatRelative } from '@/utils/format';
 import { cn } from '@/utils/cn';
+import { formatBytes, formatDateTime, formatNumber } from '@/utils/format';
 
-type Filter = 'All' | ExperimentStatus;
+type Filter = 'all' | ExperimentStatus;
+const FILTERS: Filter[] = ['all', 'draft', 'queued', 'running', 'completed', 'failed', 'cancelled'];
 
-/** Scientific experiment manager. Records persist in localStorage. */
+const KV_PAIRS: [string, string][] = [
+  ['f16', 'f16'],
+  ['q8_0', 'q8_0'],
+  ['q8_0', 'q4_0'],
+  ['q4_0', 'q4_0'],
+];
+const PRESETS = ['Q2_K', 'Q3_K_M', 'Q4_K_M', 'Q5_K_M', 'Q6_K', 'Q8_0'];
+const UNQUANTIZED = new Set(['F16', 'BF16', 'F32']);
+
+/** Experiments run by the engine as background jobs. */
 export function ExperimentsPage() {
-  const experiments = useAppStore((state) => state.experiments);
-  const models = useAppStore((state) => state.models);
-  const addExperiment = useAppStore((state) => state.addExperiment);
-  const setExperimentStatus = useAppStore((state) => state.setExperimentStatus);
-  const removeExperiment = useAppStore((state) => state.removeExperiment);
+  const experiments = useEngineStore((s) => s.experiments);
+  const models = useEngineStore((s) => s.models);
+  const types = useEngineStore((s) => s.experimentTypes);
+  const connection = useEngineStore((s) => s.connection);
+  const online = connection === 'online';
 
-  const [filter, setFilter] = useState<Filter>('All');
+  const [filter, setFilter] = useState<Filter>('all');
   const [createOpen, setCreateOpen] = useState(false);
-  const [detail, setDetail] = useState<Experiment | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<Experiment | null>(null);
+  const [detailId, setDetailId] = useState<string | null>(null);
 
-  const counts = useMemo<Record<string, number>>(() => {
-    const byStatus = experimentStatuses.reduce<Record<string, number>>((acc, status) => {
-      acc[status] = experiments.filter((item) => item.status === status).length;
-      return acc;
-    }, {});
-    return { All: experiments.length, ...byStatus };
+  const counts = useMemo(() => {
+    const c: Record<string, number> = { all: experiments.length };
+    FILTERS.slice(1).forEach((f) => (c[f] = experiments.filter((e) => e.status === f).length));
+    return c;
   }, [experiments]);
 
-  const filtered = useMemo(
-    () => (filter === 'All' ? experiments : experiments.filter((item) => item.status === filter)),
-    [experiments, filter],
-  );
-
-  /* Keep the open detail sheet in sync with store updates. */
-  const activeDetail = detail ? experiments.find((item) => item.id === detail.id) ?? null : null;
-
-  const handleDelete = () => {
-    if (!deleteTarget) return;
-    removeExperiment(deleteTarget.id);
-    toast.info('Experiment deleted', `"${deleteTarget.name}" was removed from local storage.`);
-    setDeleteTarget(null);
-    setDetail(null);
-  };
+  const filtered = filter === 'all' ? experiments : experiments.filter((e) => e.status === filter);
+  const detail = detailId ? experiments.find((e) => e.id === detailId) ?? null : null;
 
   return (
     <div className="animate-fade-in">
       <PageHeader
         title="Experiments"
-        subtitle="Plan, track and review optimization experiments. Stored in this browser only."
-        meta={<ProvenanceBadge />}
+        subtitle="Reproducible experiments executed by the engine. Results are measured or explicitly labelled as proxies."
+        meta={<ProvenanceBadge kind={online ? 'live' : 'offline'} />}
         actions={
-          <Button
-            variant="primary"
-            icon={<Plus />}
-            onClick={() => setCreateOpen(true)}
-            disabled={models.length === 0}
-          >
+          <Button variant="primary" icon={<Plus />} onClick={() => setCreateOpen(true)} disabled={!online || models.length === 0}>
             New experiment
           </Button>
         }
       />
+
+      <EngineOffline compact />
 
       <Card>
         <CardHeader
@@ -83,8 +77,7 @@ export function ExperimentsPage() {
               </span>
             </span>
           }
-          hint="Running and Completed are demonstration states — no experiment is actually executed."
-          action={<Badge tone="muted" dot>local persistence</Badge>}
+          hint="One heavy job runs at a time on the engine (8 GB VRAM target)."
         />
 
         <div className="flex flex-wrap items-center gap-2 border-b border-line/40 px-5 py-2.5">
@@ -92,19 +85,12 @@ export function ExperimentsPage() {
             ariaLabel="Filter experiments by status"
             value={filter}
             onChange={setFilter}
-            options={[
-              { value: 'All', label: 'All', count: counts.All },
-              ...experimentStatuses.map((status) => ({
-                value: status,
-                label: status,
-                count: counts[status] ?? 0,
-              })),
-            ]}
+            options={FILTERS.map((f) => ({
+              value: f,
+              label: f === 'all' ? 'All' : jobStatusLabel[f],
+              count: counts[f] ?? 0,
+            }))}
           />
-          <span className="ml-auto hidden items-center gap-1.5 font-mono text-[12px] uppercase tracking-[0.12em] text-ink-mute/70 sm:flex">
-            <Info className="h-3 w-3" />
-            {filter === 'All' ? 'all statuses' : filter.toLowerCase()}
-          </span>
         </div>
 
         {experiments.length === 0 ? (
@@ -112,255 +98,132 @@ export function ExperimentsPage() {
             <EmptyState
               icon={<FlaskConical />}
               title="No experiments yet"
-              description="Create an experiment to define a model, a hypothesis and the strategies you want to evaluate."
+              description={
+                models.length === 0
+                  ? 'Import a model first, then create an experiment.'
+                  : 'Create an experiment: quantization sensitivity (CPU), KV cache or preset comparison (GPU, llama.cpp).'
+              }
               action={
-                <Button
-                  variant="primary"
-                  icon={<Plus />}
-                  onClick={() => setCreateOpen(true)}
-                  disabled={models.length === 0}
-                >
+                <Button variant="primary" icon={<Plus />} onClick={() => setCreateOpen(true)} disabled={!online || models.length === 0}>
                   New experiment
                 </Button>
               }
             />
-            {models.length === 0 && (
-              <p className="mt-3 text-center text-[13px] text-ink-mute">
-                A model must be registered in the library first.
-              </p>
-            )}
           </CardBody>
         ) : filtered.length === 0 ? (
           <CardBody>
-            <EmptyState
-              compact
-              icon={<FlaskConical />}
-              title={`No ${filter.toLowerCase()} experiments`}
-              description="Change the status filter or create a new experiment to populate this view."
-              action={
-                <Button variant="secondary" onClick={() => setFilter('All')}>
-                  Show all
-                </Button>
-              }
-            />
+            <EmptyState compact icon={<FlaskConical />} title="Nothing with this status" description="Change the filter." />
           </CardBody>
         ) : (
-          <ExperimentTable experiments={filtered} models={models} onOpen={setDetail} />
+          <ExperimentTable experiments={filtered} models={models} types={types} onOpen={(e) => setDetailId(e.id)} />
         )}
-
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line/40 px-5 py-2.5">
-          <p className="text-[13px] text-ink-mute">
-            Records are persisted with <span className="font-mono text-ink-mute/90">localStorage</span>{' '}
-            — no account, no remote sync.
-          </p>
-          <span className="font-mono text-[12px] uppercase tracking-[0.12em] text-ink-mute/60">
-            {experiments.length} records
-          </span>
-        </div>
       </Card>
 
       {createOpen && (
         <CreateExperimentDialog
           models={models}
+          types={types}
           onClose={() => setCreateOpen(false)}
-          onSubmit={(input) => {
-            addExperiment(input);
+          onCreated={(e) => {
             setCreateOpen(false);
-            toast.success('Experiment created', `"${input.name}" was registered with status ${input.status}.`);
+            setDetailId(e.id);
           }}
         />
       )}
-
-      {/* ----------------------------- detail ----------------------------- */}
-      <Modal
-        open={Boolean(activeDetail)}
-        onClose={() => setDetail(null)}
-        title={activeDetail?.name ?? 'Experiment'}
-        kicker={activeDetail ? `experiment ${activeDetail.id}` : 'experiment'}
-        size="lg"
-        footer={
-          <>
-            <Button
-              variant="danger"
-              icon={<Trash2 />}
-              onClick={() => setDeleteTarget(activeDetail)}
-              className="mr-auto"
-            >
-              Delete
-            </Button>
-            <Button variant="secondary" onClick={() => setDetail(null)}>
-              Close
-            </Button>
-          </>
-        }
-      >
-        {activeDetail && (
-          <div className="space-y-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge
-                tone={experimentStatusTone[activeDetail.status]}
-                dot
-                pulse={activeDetail.status === 'Running'}
-              >
-                {activeDetail.status}
-              </Badge>
-              <Badge tone="muted">
-                {optimizationTargets.find((target) => target.id === activeDetail.target)?.label}
-              </Badge>
-              <span className="font-mono text-[12px] text-ink-mute">
-                updated {formatRelative(activeDetail.updatedAt)}
-              </span>
-            </div>
-
-            <div>
-              <div className="font-mono text-[12px] uppercase tracking-[0.14em] text-ink-mute">
-                Hypothesis / description
-              </div>
-              <p className="mt-1.5 text-[13.5px] leading-relaxed text-ink-dim">
-                {activeDetail.description || 'No description provided.'}
-              </p>
-            </div>
-
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
-              {[
-                [
-                  'Model',
-                  models.find((model) => model.id === activeDetail.modelId)?.name ?? 'Missing model',
-                ],
-                ['Created', formatDateTime(activeDetail.createdAt)],
-                ['Updated', formatDateTime(activeDetail.updatedAt)],
-                ['Target', optimizationTargets.find((t) => t.id === activeDetail.target)?.label ?? '—'],
-                ['Strategies', String(activeDetail.strategyIds.length)],
-                ['Record id', activeDetail.id],
-              ].map(([label, value]) => (
-                <div key={label}>
-                  <dt className="font-mono text-[12px] uppercase tracking-[0.14em] text-ink-mute">
-                    {label}
-                  </dt>
-                  <dd className="mt-1 break-words text-[13.5px] text-ink-dim">{value}</dd>
-                </div>
-              ))}
-            </dl>
-
-            <div>
-              <div className="mb-2 font-mono text-[12px] uppercase tracking-[0.14em] text-ink-mute">
-                Strategies under test
-              </div>
-              <ul className="divide-y divide-line/40 overflow-hidden rounded-md border border-line/60">
-                {activeDetail.strategyIds.map((id) => {
-                  const strategy = optimizationStrategies.find((item) => item.id === id);
-                  return (
-                    <li key={id} className="flex items-start gap-2.5 bg-raised/30 px-3 py-2">
-                      <span className="mt-0.5 rounded border border-line/70 px-1 py-[1px] font-mono text-[11.5px] uppercase tracking-[0.08em] text-ink-mute">
-                        {strategy?.code ?? id}
-                      </span>
-                      <div className="min-w-0">
-                        <div className="text-[13.5px] text-ink-dim">{strategy?.label ?? id}</div>
-                        <div className="text-[12.5px] leading-relaxed text-ink-mute">
-                          {strategy?.description}
-                        </div>
-                      </div>
-                    </li>
-                  );
-                })}
-                {activeDetail.strategyIds.length === 0 && (
-                  <li className="px-3 py-2 text-[13px] text-ink-mute">
-                    No strategy attached to this experiment.
-                  </li>
-                )}
-              </ul>
-            </div>
-
-            <SelectInput
-              label="Demonstration status"
-              hint="local only"
-              value={activeDetail.status}
-              onChange={(event) =>
-                setExperimentStatus(activeDetail.id, event.target.value as ExperimentStatus)
-              }
-            >
-              {experimentStatuses.map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
-              ))}
-            </SelectInput>
-            <p className="text-[12.5px] leading-relaxed text-ink-mute">
-              Changing the status records a local event. No run is scheduled, started or completed.
-            </p>
-          </div>
-        )}
-      </Modal>
-
-      <Modal
-        open={Boolean(deleteTarget)}
-        onClose={() => setDeleteTarget(null)}
-        title="Delete experiment?"
-        kicker="confirmation"
-        description="The record will be removed from local storage. This action cannot be undone."
-        size="sm"
-        footer={
-          <>
-            <Button variant="ghost" onClick={() => setDeleteTarget(null)}>
-              Cancel
-            </Button>
-            <Button variant="danger" icon={<Trash2 />} onClick={handleDelete}>
-              Delete experiment
-            </Button>
-          </>
-        }
-      >
-        <div className="rounded-md border border-danger/25 bg-danger/[0.05] px-3 py-2.5 text-[13.5px] text-ink-dim">
-          <span className="text-ink">{deleteTarget?.name}</span> and its configuration will be
-          discarded.
-        </div>
-      </Modal>
+      {detail && <ExperimentDetail experiment={detail} onClose={() => setDetailId(null)} />}
     </div>
   );
 }
 
 /* -------------------------------------------------------------------------- */
-/* Creation dialog                                                            */
-/* -------------------------------------------------------------------------- */
 
-interface CreateExperimentDialogProps {
-  models: ReturnType<typeof useAppStore.getState>['models'];
+function CreateExperimentDialog({
+  models,
+  types,
+  onClose,
+  onCreated,
+}: {
+  models: ModelSummary[];
+  types: ExperimentType[];
   onClose: () => void;
-  onSubmit: (input: {
-    name: string;
-    modelId: string;
-    description: string;
-    strategyIds: OptimizationStrategyId[];
-    target: Experiment['target'];
-    status: ExperimentStatus;
-  }) => void;
-}
-
-function CreateExperimentDialog({ models, onClose, onSubmit }: CreateExperimentDialogProps) {
+  onCreated: (e: Experiment) => void;
+}) {
+  const refreshCollections = useEngineStore((s) => s.refreshCollections);
+  const [typeId, setTypeId] = useState(types[0]?.id ?? 'quantization_sensitivity');
   const [name, setName] = useState('');
+  const [hypothesis, setHypothesis] = useState('');
   const [modelId, setModelId] = useState(models[0]?.id ?? '');
-  const [description, setDescription] = useState('');
-  const [strategyIds, setStrategyIds] = useState<OptimizationStrategyId[]>([]);
-  const [target, setTarget] = useState<Experiment['target']>('balanced');
-  const [status, setStatus] = useState<ExperimentStatus>('Draft');
-  const [errors, setErrors] = useState<{ name?: string; model?: string; strategies?: string }>({});
+  // type-specific
+  const [budgets, setBudgets] = useState('3.5, 4.5, 5.5');
+  const [maxRows, setMaxRows] = useState('4096');
+  const [pairs, setPairs] = useState<string[]>(['f16/f16', 'q8_0/q8_0', 'q4_0/q4_0']);
+  const [presets, setPresets] = useState<string[]>(['Q4_K_M', 'Q5_K_M', 'Q8_0']);
+  const [nCtx, setNCtx] = useState('4096');
+  const [reps, setReps] = useState('3');
+  const [ngl, setNgl] = useState('99');
+  const [pplPath, setPplPath] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const toggle = (id: OptimizationStrategyId) =>
-    setStrategyIds((current) =>
-      current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
-    );
+  const type = types.find((t) => t.id === typeId);
+  const model = models.find((m) => m.id === modelId);
+  const needsUnquantized = typeId === 'quantization_sensitivity' || typeId === 'quantization_comparison';
+  const quantWarning =
+    needsUnquantized && model && !UNQUANTIZED.has(model.quantization ?? '')
+      ? `${model.name} is ${model.quantization ?? 'of unknown precision'}: this experiment needs an F16/BF16/F32 source.`
+      : null;
 
-  const submit = () => {
-    const nextErrors: typeof errors = {};
-    if (name.trim().length < 3) nextErrors.name = 'Provide a name of at least 3 characters.';
-    if (!modelId) nextErrors.model = 'Select a model from the library.';
-    if (strategyIds.length === 0) nextErrors.strategies = 'Select at least one strategy to test.';
-    setErrors(nextErrors);
-    if (Object.keys(nextErrors).length > 0) {
-      toast.error('Experiment not created', 'Fix the highlighted fields and try again.');
+  const toggle = (list: string[], set: (v: string[]) => void, v: string) =>
+    set(list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
+
+  const buildConfig = (): Record<string, unknown> => {
+    const num = (s: string) => Number(s);
+    if (typeId === 'quantization_sensitivity')
+      return {
+        model_id: modelId,
+        budgets_bits_per_weight: budgets.split(/[,\s]+/).filter(Boolean).map(Number),
+        max_rows: maxRows ? num(maxRows) : null,
+      };
+    if (typeId === 'kv_cache_comparison')
+      return {
+        model_id: modelId,
+        pairs: pairs.map((p) => p.split('/')),
+        n_ctx: num(nCtx),
+        repetitions: num(reps),
+        n_gpu_layers: num(ngl),
+        perplexity_dataset: pplPath.trim() || null,
+      };
+    return {
+      model_id: modelId,
+      presets,
+      repetitions: num(reps),
+      n_gpu_layers: num(ngl),
+      perplexity_dataset: pplPath.trim() || null,
+    };
+  };
+
+  const submit = async () => {
+    if (name.trim().length < 3) {
+      setError('Name must have at least 3 characters.');
       return;
     }
-    onSubmit({ name, modelId, description, strategyIds, target, status });
+    setBusy(true);
+    setError(null);
+    try {
+      const e = await api.createExperiment({
+        name: name.trim(),
+        type: typeId,
+        hypothesis: hypothesis.trim() || undefined,
+        config: buildConfig(),
+      });
+      toast.success('Experiment created', `"${e.name}" is a draft. Start it from its detail sheet.`);
+      await refreshCollections();
+      onCreated(e);
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -368,122 +231,446 @@ function CreateExperimentDialog({ models, onClose, onSubmit }: CreateExperimentD
       open
       onClose={onClose}
       title="New experiment"
-      kicker="experiment · draft"
-      description="Define a hypothesis and the strategies to evaluate once the engine is available."
+      kicker="engine · experiment"
+      description={type?.description}
+      size="lg"
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="primary" icon={<Plus />} onClick={submit}>
-            Create experiment
+          <Button variant="primary" icon={<Plus />} onClick={() => void submit()} loading={busy}>
+            Create draft
           </Button>
         </>
       }
     >
       <div className="space-y-3">
-        <TextInput
-          label="Experiment name"
-          placeholder="KV cache precision sweep"
-          value={name}
-          onChange={(event) => {
-            setName(event.target.value);
-            setErrors((current) => ({ ...current, name: undefined }));
-          }}
-          autoFocus
-        />
-        {errors.name && <p className="-mt-1.5 text-[13px] text-danger">{errors.name}</p>}
-
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <SelectInput
-            label="Model"
-            value={modelId}
-            onChange={(event) => {
-              setModelId(event.target.value);
-              setErrors((current) => ({ ...current, model: undefined }));
-            }}
-          >
-            {models.map((model) => (
-              <option key={model.id} value={model.id}>
-                {model.name}
+          <SelectInput label="Experiment type" value={typeId} onChange={(e) => setTypeId(e.target.value)}>
+            {types.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
               </option>
             ))}
           </SelectInput>
-          <SelectInput
-            label="Optimization target"
-            value={target}
-            onChange={(event) => setTarget(event.target.value as Experiment['target'])}
-          >
-            {optimizationTargets.map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.label}
+          <SelectInput label="Model" value={modelId} onChange={(e) => setModelId(e.target.value)}>
+            {models.map((m) => (
+              <option key={m.id} value={m.id} disabled={m.status !== 'available'}>
+                {m.name} — {m.quantization ?? m.format}
               </option>
             ))}
           </SelectInput>
         </div>
-        {errors.model && <p className="-mt-1.5 text-[13px] text-danger">{errors.model}</p>}
-
-        <TextArea
-          label="Description / hypothesis"
-          rows={3}
-          placeholder="What do you expect to observe, and under which constraints?"
-          value={description}
-          onChange={(event) => setDescription(event.target.value)}
-        />
-
-        <div>
-          <div className="mb-1.5 flex items-baseline justify-between">
-            <span className="text-[13.5px] font-medium text-ink-dim">Strategies to test</span>
-            <span className="font-mono text-[12.5px] text-ink-mute">{strategyIds.length} selected</span>
+        {type && (
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge tone={type.cost === 'expensive' ? 'warn' : 'neutral'} dot>
+              cost: {type.cost}
+            </Badge>
+            {type.requires.map((r) => (
+              <Badge key={r} tone="muted">
+                {r}
+              </Badge>
+            ))}
           </div>
-          <div className="flex flex-wrap gap-1.5">
-            {optimizationStrategies.map((strategy) => {
-              const active = strategyIds.includes(strategy.id);
-              return (
-                <button
-                  key={strategy.id}
-                  type="button"
-                  onClick={() => {
-                    toggle(strategy.id);
-                    setErrors((current) => ({ ...current, strategies: undefined }));
-                  }}
-                  className={cn(
-                    'focus-ring inline-flex items-center gap-1.5 rounded border px-2 py-1 text-[13px] transition-colors',
-                    active
-                      ? 'border-accent/45 bg-accent/[0.07] text-accent'
-                      : 'border-line bg-raised/30 text-ink-mute hover:border-ink-mute/40 hover:text-ink-dim',
-                  )}
-                >
-                  <span className="font-mono text-[11.5px] uppercase tracking-[0.06em]">
-                    {strategy.code}
-                  </span>
-                  {strategy.label}
-                  {active && <X className="h-2.5 w-2.5 opacity-70" />}
-                </button>
-              );
-            })}
-          </div>
-          {errors.strategies && (
-            <p className="mt-1.5 text-[13px] text-danger">{errors.strategies}</p>
-          )}
-        </div>
+        )}
+        {quantWarning && (
+          <p className="flex items-start gap-2 text-[13px] text-warn">
+            <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
+            {quantWarning}
+          </p>
+        )}
 
-        <SelectInput
-          label="Initial status"
-          hint="demo states"
-          value={status}
-          onChange={(event) => setStatus(event.target.value as ExperimentStatus)}
-        >
-          {experimentStatuses.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </SelectInput>
-        <p className="text-[12.5px] leading-relaxed text-ink-mute">
-          Running and Completed are labels only: creating an experiment never launches a job.
-        </p>
+        <TextInput label="Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="EXP-001 Qwen2.5-0.5B sensitivity" autoFocus />
+        <TextArea label="Hypothesis" rows={2} value={hypothesis} onChange={(e) => setHypothesis(e.target.value)} placeholder="What do you expect to observe?" />
+
+        {typeId === 'quantization_sensitivity' && (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <TextInput label="Budgets" hint="bits / weight, comma separated" value={budgets} onChange={(e) => setBudgets(e.target.value)} />
+            <TextInput label="Rows sampled per tensor" hint="empty = all" type="number" value={maxRows} onChange={(e) => setMaxRows(e.target.value)} />
+          </div>
+        )}
+
+        {typeId === 'kv_cache_comparison' && (
+          <div>
+            <div className="mb-1.5 text-[13.5px] font-medium text-ink-dim">KV cache pairs (K / V)</div>
+            <div className="flex flex-wrap gap-1.5">
+              {KV_PAIRS.map(([k, v]) => {
+                const id = `${k}/${v}`;
+                return (
+                  <ChipToggle key={id} active={pairs.includes(id)} onClick={() => toggle(pairs, setPairs, id)}>
+                    {id}
+                  </ChipToggle>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {typeId === 'quantization_comparison' && (
+          <div>
+            <div className="mb-1.5 text-[13.5px] font-medium text-ink-dim">llama.cpp presets</div>
+            <div className="flex flex-wrap gap-1.5">
+              {PRESETS.map((p) => (
+                <ChipToggle key={p} active={presets.includes(p)} onClick={() => toggle(presets, setPresets, p)}>
+                  {p}
+                </ChipToggle>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {typeId !== 'quantization_sensitivity' && (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {typeId === 'kv_cache_comparison' && (
+              <TextInput label="Context" hint="tokens" type="number" value={nCtx} onChange={(e) => setNCtx(e.target.value)} />
+            )}
+            <TextInput label="Repetitions" type="number" value={reps} onChange={(e) => setReps(e.target.value)} />
+            <TextInput label="GPU layers" hint="-ngl" type="number" value={ngl} onChange={(e) => setNgl(e.target.value)} />
+            <TextInput
+              label="Perplexity dataset"
+              hint="absolute path to a local .txt (optional)"
+              value={pplPath}
+              onChange={(e) => setPplPath(e.target.value)}
+              wrapperClassName="sm:col-span-3"
+            />
+          </div>
+        )}
+        {error && <p className="break-words text-[13px] text-danger">{error}</p>}
       </div>
     </Modal>
+  );
+}
+
+function ChipToggle({ active, onClick, children }: { active: boolean; onClick: () => void; children: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'focus-ring rounded border px-2 py-1 font-mono text-[12.5px] transition-colors',
+        active ? 'border-accent/45 bg-accent/[0.07] text-accent' : 'border-line bg-raised/30 text-ink-mute hover:text-ink-dim',
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+
+function ExperimentDetail({ experiment: e, onClose }: { experiment: Experiment; onClose: () => void }) {
+  const models = useEngineStore((s) => s.models);
+  const types = useEngineStore((s) => s.experimentTypes);
+  const refreshCollections = useEngineStore((s) => s.refreshCollections);
+  const [confirmStart, setConfirmStart] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const full = e;
+
+  const type = types.find((t) => t.id === e.type);
+  const active = e.status === 'queued' || e.status === 'running';
+
+  const start = async (confirm: boolean) => {
+    setBusy(true);
+    try {
+      await api.startExperiment(e.id, confirm);
+      toast.info('Experiment started', `"${e.name}" was queued on the engine.`);
+      setConfirmStart(false);
+      await refreshCollections();
+    } catch (err) {
+      if (err instanceof ApiError && err.code === 'CONFIRMATION_REQUIRED') setConfirmStart(true);
+      else toast.error('Could not start', errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const cancel = async () => {
+    if (!e.job_id) return;
+    try {
+      await api.cancelJob(e.job_id);
+      toast.info('Cancellation requested', 'The engine stops the job at its next checkpoint.');
+      await refreshCollections();
+    } catch (err) {
+      toast.error('Cancel failed', errorMessage(err));
+    }
+  };
+
+  const remove = async () => {
+    try {
+      await api.deleteExperiment(e.id);
+      toast.info('Experiment deleted', `"${e.name}" was removed. Its benchmark records are kept.`);
+      await refreshCollections();
+      onClose();
+    } catch (err) {
+      toast.error('Delete failed', errorMessage(err));
+    }
+  };
+
+  return (
+    <>
+      <Modal
+        open
+        onClose={onClose}
+        title={e.name}
+        kicker={`${e.id} · ${type?.name ?? e.type}`}
+        size="lg"
+        footer={
+          <>
+            <Button variant="danger" icon={<Trash2 />} onClick={() => setConfirmDelete(true)} className="mr-auto" disabled={active}>
+              Delete
+            </Button>
+            {active ? (
+              <Button variant="outline" icon={<Square />} onClick={() => void cancel()}>
+                Cancel job
+              </Button>
+            ) : (
+              <Button variant="primary" icon={<Play />} onClick={() => void start(false)} loading={busy}>
+                {e.status === 'draft' ? 'Start' : 'Run again'}
+              </Button>
+            )}
+            <Button variant="secondary" onClick={onClose}>
+              Close
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge tone={jobStatusTone[e.status]} dot>
+              {jobStatusLabel[e.status]}
+            </Badge>
+            {type && <Badge tone={type.cost === 'expensive' ? 'warn' : 'muted'}>cost: {type.cost}</Badge>}
+            <span className="font-mono text-[12px] text-ink-mute">model: {modelLabel(models, e.model_id)}</span>
+          </div>
+
+          {full.job && (active || full.job.error) && (
+            <div>
+              {active && (
+                <>
+                  <ProgressBar value={full.job.progress * 100} height="sm" />
+                  <div className="mt-1 font-mono text-[12px] text-ink-mute">
+                    {formatNumber(full.job.progress * 100, 0)}% · {full.job.stage}
+                  </div>
+                </>
+              )}
+              {full.job.error && (
+                <p className="mt-1 break-words rounded border border-danger/30 bg-danger/[0.04] px-3 py-2 text-[13px] text-danger">
+                  {full.job.error.code}: {full.job.error.message}
+                </p>
+              )}
+            </div>
+          )}
+
+          {e.hypothesis && (
+            <div>
+              <div className="font-mono text-[12px] uppercase tracking-[0.14em] text-ink-mute">Hypothesis</div>
+              <p className="mt-1 text-[13.5px] leading-relaxed text-ink-dim">{e.hypothesis}</p>
+            </div>
+          )}
+
+          <ExperimentResult experiment={e} />
+
+          <details className="rounded border border-line/60 px-3 py-2">
+            <summary className="cursor-pointer font-mono text-[12px] uppercase tracking-[0.12em] text-ink-mute">
+              Configuration · created {formatDateTime(e.created_at)}
+            </summary>
+            <pre className="mt-2 overflow-x-auto font-mono text-[12px] text-ink-dim">{JSON.stringify(e.config, null, 2)}</pre>
+          </details>
+        </div>
+      </Modal>
+
+      <Modal
+        open={confirmStart}
+        onClose={() => setConfirmStart(false)}
+        title="Run an expensive experiment?"
+        kicker="confirmation required"
+        description="This experiment loads models on the GPU and may write multi-GB files. Other GPU work should be stopped."
+        size="sm"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setConfirmStart(false)}>
+              Cancel
+            </Button>
+            <Button variant="primary" icon={<Play />} onClick={() => void start(true)} loading={busy}>
+              Confirm and run
+            </Button>
+          </>
+        }
+      >
+        <p className="text-[13.5px] text-ink-dim">Requires: {type?.requires.join(', ')}</p>
+      </Modal>
+
+      <Modal
+        open={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        title="Delete experiment?"
+        kicker="confirmation"
+        description="The experiment record is deleted from the engine database. Benchmarks it produced are kept."
+        size="sm"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setConfirmDelete(false)}>
+              Cancel
+            </Button>
+            <Button variant="danger" icon={<Trash2 />} onClick={() => void remove()}>
+              Delete
+            </Button>
+          </>
+        }
+      >
+        <p className="text-[13.5px] text-ink-dim">{e.name}</p>
+      </Modal>
+    </>
+  );
+}
+
+/* ------------------------------ result views ------------------------------ */
+
+interface SensitivityResult {
+  validated: boolean;
+  validation_note: string;
+  n_quantizable_params: number;
+  sensitivities: { name: string; n_params: number; errors: Record<string, number> }[];
+  comparisons: {
+    budget_bits_per_weight: number;
+    adaptive: { bits_per_weight: number; proxy_distortion: number; type_histogram: Record<string, number>; feasible: boolean };
+    best_uniform_within_budget: { method: string; bits_per_weight: number; proxy_distortion: number } | null;
+    proxy_distortion_ratio: number | null;
+  }[];
+}
+
+interface RowsResult {
+  validated: boolean;
+  note: string | null;
+  rows: {
+    cache_type_k?: string;
+    cache_type_v?: string;
+    preset?: string;
+    file_size_bytes?: number;
+    kv_estimate?: { total_bytes: number };
+    record: {
+      gen_tps: { mean: number; std: number | null } | null;
+      prompt_tps: { mean: number } | null;
+      speed: { resources: { peak_vram_bytes: number | null; peak_ram_bytes: number | null } } | null;
+      quality: { perplexity?: { perplexity: number; uncertainty: number | null } };
+    };
+  }[];
+}
+
+function ExperimentResult({ experiment: e }: { experiment: Experiment }) {
+  const unit = useAppStore((s) => s.settings.unit);
+  if (!e.result) {
+    return e.status === 'completed' ? null : (
+      <p className="text-[13px] text-ink-mute">No result yet — nothing is displayed until the engine produces it.</p>
+    );
+  }
+  const r = e.result as unknown;
+
+  if (e.type === 'quantization_sensitivity') {
+    const s = r as SensitivityResult;
+    const top = [...s.sensitivities]
+      .sort((a, b) => (b.errors['4'] ?? 0) - (a.errors['4'] ?? 0))
+      .slice(0, 8);
+    return (
+      <div className="space-y-3">
+        <ValidationNote validated={s.validated} note={s.validation_note} />
+        <table className="w-full text-left text-[13px]">
+          <thead className="font-mono text-[11.5px] uppercase tracking-[0.08em] text-ink-mute/70">
+            <tr>
+              <th className="py-1">Budget</th>
+              <th>Adaptive</th>
+              <th>Mix</th>
+              <th>Best uniform</th>
+              <th>Distortion ratio</th>
+            </tr>
+          </thead>
+          <tbody>
+            {s.comparisons.map((c) => (
+              <tr key={c.budget_bits_per_weight} className="border-t border-line/30 text-ink-dim">
+                <td className="py-1.5 font-mono">{c.budget_bits_per_weight} bpw</td>
+                <td className="font-mono">{formatNumber(c.adaptive.bits_per_weight, 3)} bpw</td>
+                <td className="font-mono text-[12px]">
+                  {Object.entries(c.adaptive.type_histogram).map(([t, n]) => `${n}×${t}`).join(' ')}
+                </td>
+                <td className="font-mono">
+                  {c.best_uniform_within_budget
+                    ? `${c.best_uniform_within_budget.method} (${formatNumber(c.best_uniform_within_budget.bits_per_weight, 3)})`
+                    : '—'}
+                </td>
+                <td className="font-mono">{c.proxy_distortion_ratio != null ? formatNumber(c.proxy_distortion_ratio, 3) : '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div>
+          <div className="mb-1 font-mono text-[12px] uppercase tracking-[0.14em] text-ink-mute">
+            Most sensitive tensors (4-bit proxy error)
+          </div>
+          <ul className="space-y-0.5 font-mono text-[12.5px] text-ink-dim">
+            {top.map((t) => (
+              <li key={t.name} className="flex justify-between gap-3">
+                <span className="truncate">{t.name}</span>
+                <span>{(t.errors['4'] ?? 0).toExponential(3)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    );
+  }
+
+  const rr = r as RowsResult;
+  if (Array.isArray(rr.rows)) {
+    return (
+      <div className="space-y-3">
+        <ValidationNote validated={rr.validated} note={rr.note ?? undefined} />
+        <table className="w-full text-left text-[13px]">
+          <thead className="font-mono text-[11.5px] uppercase tracking-[0.08em] text-ink-mute/70">
+            <tr>
+              <th className="py-1">Config</th>
+              <th>Gen tok/s</th>
+              <th>Prompt tok/s</th>
+              <th>Peak VRAM</th>
+              <th>Peak RAM</th>
+              <th>PPL</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rr.rows.map((row, i) => {
+              const rec = row.record;
+              const ppl = rec.quality.perplexity;
+              return (
+                <tr key={i} className="border-t border-line/30 font-mono text-ink-dim">
+                  <td className="py-1.5">
+                    {row.preset ?? `${row.cache_type_k}/${row.cache_type_v}`}
+                    {row.kv_estimate && (
+                      <span className="ml-1 text-[11.5px] text-ink-mute">(KV est. {formatBytes(row.kv_estimate.total_bytes, unit)})</span>
+                    )}
+                  </td>
+                  <td>{rec.gen_tps ? `${formatNumber(rec.gen_tps.mean, 1)} ± ${formatNumber(rec.gen_tps.std ?? 0, 1)}` : '—'}</td>
+                  <td>{rec.prompt_tps ? formatNumber(rec.prompt_tps.mean, 0) : '—'}</td>
+                  <td>{rec.speed?.resources.peak_vram_bytes != null ? formatBytes(rec.speed.resources.peak_vram_bytes, unit) : '—'}</td>
+                  <td>{rec.speed?.resources.peak_ram_bytes != null ? formatBytes(rec.speed.resources.peak_ram_bytes, unit) : '—'}</td>
+                  <td>{ppl ? `${formatNumber(ppl.perplexity, 3)} ± ${formatNumber(ppl.uncertainty ?? 0, 3)}` : 'not measured'}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
+  return <pre className="overflow-x-auto font-mono text-[12px] text-ink-dim">{JSON.stringify(e.result, null, 2)}</pre>;
+}
+
+function ValidationNote({ validated, note }: { validated: boolean; note?: string }) {
+  return (
+    <div className={cn('flex items-start gap-2 border-l-2 pl-3 text-[13px]', validated ? 'border-ok/60 text-ink-dim' : 'border-warn/60 text-ink-dim')}>
+      <ProvenanceBadge kind={validated ? 'measured' : 'proxy'} />
+      <span>{note ?? (validated ? 'Measured on this machine.' : 'Not validated by an output-space measurement.')}</span>
+    </div>
   );
 }

@@ -14,9 +14,14 @@ router = APIRouter(prefix="/system", tags=["system"])
 
 @router.get("/health", response_model=HealthResponse, summary="Engine liveness and engine availability")
 def health(s: Services = Depends(services)):
+    cfg = s.settings
     return HealthResponse(status="ok", engine=ENGINE_NAME, version=__version__,
                           schema_version=s.db.schema_version(),
-                          engines=[e.status() for e in s.engines().values()])
+                          engines=[e.status() for e in s.engines().values()],
+                          config={"data_dir": str(cfg.data_dir), "db_path": str(cfg.db_path),
+                                  "model_dirs": [str(d) for d in cfg.model_dirs],
+                                  "llamacpp_dir": str(cfg.llamacpp_dir) if cfg.llamacpp_dir else None,
+                                  "max_concurrent_jobs": cfg.max_concurrent_jobs})
 
 
 @router.get("/hardware", response_model=HardwareSnapshot,

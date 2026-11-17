@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Check,
-  FolderOpen,
   Info,
   MonitorSmartphone,
   RotateCcw,
@@ -14,9 +13,11 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, CardBody, CardHeader } from '@/components/ui/Card';
-import { Segmented, SelectInput, TextInput, Toggle } from '@/components/ui/Field';
+import { Segmented, SelectInput, Toggle } from '@/components/ui/Field';
 import { Modal } from '@/components/ui/Modal';
 import { useAppStore } from '@/store/useAppStore';
+import { useEngineStore } from '@/store/useEngineStore';
+import { API_BASE } from '@/api/client';
 import { APP_CHANNEL, APP_VERSION } from '@/store/defaults';
 import { toast } from '@/store/useToastStore';
 import type { SizeUnit, ThemeMode } from '@/types';
@@ -31,21 +32,16 @@ const themes: Array<{ id: ThemeMode; label: string; description: string; icon: t
 export function SettingsPage() {
   const settings = useAppStore((state) => state.settings);
   const updateSettings = useAppStore((state) => state.updateSettings);
-  const resetWorkspace = useAppStore((state) => state.resetWorkspace);
+  const resetPreferences = useAppStore((state) => state.resetPreferences);
   const [confirmReset, setConfirmReset] = useState(false);
-
-  const handleBrowse = () => {
-    toast.info(
-      'Filesystem access unavailable',
-      'Directory pickers require the desktop shell (Tauri). The path is stored as a placeholder.',
-    );
-  };
+  const health = useEngineStore((state) => state.health);
+  const connection = useEngineStore((state) => state.connection);
 
   return (
     <div className="animate-fade-in">
       <PageHeader
         title="Settings"
-        subtitle="Workspace preferences. Applied immediately and stored in this browser."
+        subtitle="Interface preferences (stored in this browser) and engine configuration (read-only)."
         meta={<Badge tone="muted" dot>local profile</Badge>}
       />
 
@@ -176,47 +172,42 @@ export function SettingsPage() {
                 checked={settings.engineCheckOnLaunch}
                 onChange={(engineCheckOnLaunch) => updateSettings({ engineCheckOnLaunch })}
                 label="Check engine on launch"
-                description="Report the missing optimization engine once at startup."
+                description="Show the engine connection status once at startup."
               />
             </div>
           </CardBody>
         </Card>
 
-        {/* ---------------------------- workspace --------------------------- */}
+        {/* ------------------------------ engine ---------------------------- */}
         <Card>
           <CardHeader
-            title="Directories"
-            hint="Placeholders for the future native runtime."
-            action={<Badge tone="muted" mono>not accessed</Badge>}
+            title="Engine"
+            hint="Configured on the engine host (AETHER_* environment variables)."
+            action={
+              <Badge tone={connection === 'online' ? 'ok' : 'danger'} dot>
+                {connection === 'online' ? 'online' : connection}
+              </Badge>
+            }
           />
-          <CardBody className="space-y-3">
-            <TextInput
-              label="Models directory"
-              hint="placeholder"
-              value={settings.modelsDirectory}
-              onChange={(event) => updateSettings({ modelsDirectory: event.target.value })}
-              icon={<FolderOpen />}
-            />
-            <TextInput
-              label="Experiments directory"
-              hint="placeholder"
-              value={settings.experimentsDirectory}
-              onChange={(event) => updateSettings({ experimentsDirectory: event.target.value })}
-              icon={<FolderOpen />}
-            />
-            <div className="flex flex-wrap items-center gap-2">
-              <Button variant="outline" size="sm" icon={<FolderOpen />} onClick={handleBrowse}>
-                Browse…
-              </Button>
-              <span className="text-[12.5px] text-ink-mute">
-                Paths are persisted locally and never resolved by the browser.
-              </span>
-            </div>
+          <CardBody className="space-y-2">
+            {[
+              ['API endpoint', API_BASE],
+              ['Engine version', health ? `${health.engine} ${health.version} · schema ${health.schema_version}` : null],
+              ['Data directory', health?.config.data_dir],
+              ['Database', health?.config.db_path],
+              ['Model directories', health?.config.model_dirs.length ? health.config.model_dirs.join(' · ') : 'not set (AETHER_MODEL_DIRS)'],
+              ['llama.cpp directory', health?.config.llamacpp_dir ?? 'not set (AETHER_LLAMACPP_DIR) — PATH is searched'],
+              ['Concurrent jobs', health?.config.max_concurrent_jobs],
+            ].map(([label, value]) => (
+              <div key={String(label)} className="flex items-baseline justify-between gap-3 border-b border-line/30 pb-1.5 last:border-0">
+                <span className="shrink-0 font-mono text-[12px] uppercase tracking-[0.1em] text-ink-mute">{label}</span>
+                <span className="break-all text-right font-mono text-[12.5px] text-ink-dim">{value ?? '—'}</span>
+              </div>
+            ))}
             <div className="flex items-start gap-2 rounded border border-line/60 bg-raised/30 px-2.5 py-2">
               <Info className="mt-0.5 h-3 w-3 shrink-0 text-ink-mute" />
               <p className="text-[13px] leading-relaxed text-ink-mute">
-                AETHER reads no files in this build. The Python engine and Tauri shell will receive
-                these paths as launch arguments.
+                These paths are read-only here: change them in the engine environment and restart it.
               </p>
             </div>
           </CardBody>
@@ -236,7 +227,7 @@ export function SettingsPage() {
                 ['Version', `v${APP_VERSION}-${APP_CHANNEL}`],
                 ['Organization', 'RazorResearch'],
                 ['License', 'Apache 2.0 — planned'],
-                ['Build', 'Preview · engine offline'],
+                ['Engine', health ? `v${health.version}` : 'offline'],
               ].map(([label, value]) => (
                 <div key={label} className="flex items-baseline justify-between gap-3">
                   <dt className="font-mono text-[12px] uppercase tracking-[0.12em] text-ink-mute">
@@ -261,11 +252,12 @@ export function SettingsPage() {
                 onClick={() => setConfirmReset(true)}
                 className="ml-auto"
               >
-                Restore demo data
+                Reset preferences
               </Button>
             </div>
             <p className="text-[12.5px] leading-relaxed text-ink-mute">
-              Restoring demo data clears local edits to models, experiments, activity and settings.
+              Resets theme, units and the optimization form. Engine data (models, experiments, benchmarks) is not
+              affected.
             </p>
           </CardBody>
         </Card>
@@ -274,9 +266,9 @@ export function SettingsPage() {
       <Modal
         open={confirmReset}
         onClose={() => setConfirmReset(false)}
-        title="Restore demonstration workspace?"
+        title="Reset interface preferences?"
         kicker="confirmation"
-        description="Local changes to models, experiments, activity and preferences will be discarded."
+        description="Theme, units, startup options and the optimization form return to their defaults."
         size="sm"
         footer={
           <>
@@ -287,18 +279,18 @@ export function SettingsPage() {
               variant="danger"
               icon={<RotateCcw />}
               onClick={() => {
-                resetWorkspace();
+                resetPreferences();
                 setConfirmReset(false);
-                toast.success('Demo workspace restored', 'Seed models, experiments and events are back.');
+                toast.success('Preferences reset', 'Engine data was not touched.');
               }}
             >
-              Restore
+              Reset
             </Button>
           </>
         }
       >
         <p className="text-[13.5px] leading-relaxed text-ink-dim">
-          Only data stored in this browser is affected. No file on disk is created or modified.
+          Only preferences stored in this browser are affected.
         </p>
       </Modal>
     </div>
