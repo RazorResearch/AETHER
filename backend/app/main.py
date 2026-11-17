@@ -15,7 +15,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app import __version__
-from app.api.routes import activity, benchmarks, experiments, models, optimization, system
+from app.api.routes import activity, benchmarks, chat, experiments, models, optimization, system
 from app.api.schemas import ErrorResponse
 from app.core.config import Settings, load_settings
 from app.core.errors import AetherError
@@ -70,7 +70,7 @@ def create_app(settings: Settings | None = None, services: Services | None = Non
     async def unhandled(_: Request, exc: Exception):
         return _err(500, "INTERNAL_ERROR", f"{type(exc).__name__}: {exc}")
 
-    for r in (system, models, experiments, benchmarks, activity, optimization):
+    for r in (system, models, experiments, benchmarks, activity, optimization, chat):
         app.include_router(r.router, prefix=API_PREFIX)
     return app
 

@@ -96,9 +96,51 @@ MIGRATIONS: list[tuple[int, str, str]] = [
     );
     CREATE INDEX idx_activity_ts ON activity_logs(timestamp);
     """),
+    (2, "chat: sessions, messages, profiles, comparisons", """
+    CREATE TABLE chat_sessions (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        model_id TEXT REFERENCES models(id) ON DELETE SET NULL,
+        profile_id TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+    );
+    CREATE TABLE chat_messages (
+        id TEXT PRIMARY KEY,
+        session_id TEXT NOT NULL REFERENCES chat_sessions(id) ON DELETE CASCADE,
+        seq INTEGER NOT NULL,
+        role TEXT NOT NULL,
+        content TEXT NOT NULL,
+        reasoning TEXT,
+        status TEXT NOT NULL,
+        metrics TEXT,
+        created_at TEXT NOT NULL
+    );
+    CREATE INDEX idx_chat_messages_session ON chat_messages(session_id, seq);
+    CREATE TABLE chat_profiles (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        model_id TEXT REFERENCES models(id) ON DELETE SET NULL,
+        generation TEXT NOT NULL,
+        runtime TEXT NOT NULL,
+        notes TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+    );
+    CREATE TABLE chat_comparisons (
+        id TEXT PRIMARY KEY,
+        status TEXT NOT NULL,
+        request TEXT NOT NULL,
+        results TEXT,
+        job_id TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+    );
+    """),
 ]
 
-JSON_COLUMNS = {"analysis", "snapshot", "config", "result", "spec", "record", "params", "details", "error"}
+JSON_COLUMNS = {"analysis", "snapshot", "config", "result", "spec", "record", "params", "details", "error",
+                "metrics", "generation", "runtime", "request", "results"}
 
 
 def utcnow() -> str:

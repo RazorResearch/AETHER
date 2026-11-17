@@ -16,7 +16,7 @@ GiB = 1024**3
 
 
 def make_llama_gguf(path: Path, n_layers: int = 2, embd: int = 256, ff: int = 512, heads: int = 4,
-                    kv_heads: int = 2, vocab: int = 300, ctx: int = 1024, dtype: str = "F16",
+                    kv_heads: int = 2, vocab: int = 300, ctx: int = 8192, dtype: str = "F16",
                     seed: int = 0, file_type: int | None = 1) -> Path:
     """Tiny llama-architecture GGUF with random weights (F16, BF16 or F32)."""
     rng = np.random.default_rng(seed)

@@ -26,3 +26,22 @@ def optimization(request: Request) -> OptimizationService:
 
 def page(items: list, total: int, limit: int, offset: int) -> dict:
     return {"items": items, "total": total, "limit": limit, "offset": offset}
+
+
+def chat(request: Request):
+    from app.services.chat import ChatService
+
+    s = request.app.state.services
+    return s.singleton("chat", lambda: ChatService(s))
+
+
+def profiles(request: Request):
+    from app.services.chat_profiles import ProfileService
+
+    return ProfileService(request.app.state.services)
+
+
+def compare(request: Request):
+    from app.services.chat_compare import CompareService
+
+    return CompareService(request.app.state.services)

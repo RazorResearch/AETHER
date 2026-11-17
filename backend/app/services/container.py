@@ -9,6 +9,7 @@ from app.core.hardware import HardwareSnapshot, collect_hardware, hardware_finge
 from app.core.model_manager import ModelManager
 from app.database.db import Database, new_id, utcnow
 from app.engines.base import InferenceEngine
+from app.engines.llama_server import LlamaServerRuntime
 from app.engines.llamacpp import LlamaCppEngine
 from app.engines.pytorch import PyTorchEngine
 from app.optimizations.memory.planner import MemoryBudget
@@ -28,6 +29,9 @@ class Services:
         self.jobs = JobManager(self.db, self.activity, settings.max_concurrent_jobs)
         self.llamacpp = llamacpp or LlamaCppEngine(settings.llamacpp_dir, timeout_s=settings.subprocess_timeout_s)
         self.pytorch = PyTorchEngine()
+        # interactive inference: one resident llama-server process (8 GB VRAM target)
+        self.chat_runtime = LlamaServerRuntime(self.llamacpp.binaries.get("llama-server"))
+        self._singletons: dict = {}
         self._hardware_provider = hardware_provider or (
             lambda: collect_hardware(self.disk_paths()))
         recovered = self.jobs.recover()
@@ -75,5 +79,11 @@ class Services:
                             ram_safety_margin_bytes=s.ram_safety_margin,
                             cuda_context_overhead_bytes=s.cuda_context_overhead)
 
+    def singleton(self, key: str, factory):
+        if key not in self._singletons:
+            self._singletons[key] = factory()
+        return self._singletons[key]
+
     def shutdown(self) -> None:
         self.jobs.shutdown()
+        self.chat_runtime.shutdown()

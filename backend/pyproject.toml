@@ -19,6 +19,7 @@ dependencies = [
     "psutil>=5.9",           # BSD-3-Clause
     "nvidia-ml-py>=12.535",  # BSD-3-Clause
     "numpy>=1.26",           # BSD-3-Clause
+    "httpx>=0.27",           # BSD-3-Clause (llama-server client)
 ]
 
 [project.optional-dependencies]

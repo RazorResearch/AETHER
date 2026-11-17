@@ -26,9 +26,10 @@ from app.engines.base import (BenchParams, BenchResult, CancelToken, EngineStatu
                               PerplexityResult, ProgressFn, RuntimeParams)
 from app.engines.monitor import ProcessMonitor
 
-TOOLS = ("llama-bench", "llama-perplexity", "llama-quantize", "llama-imatrix", "llama-cli")
+TOOLS = ("llama-bench", "llama-perplexity", "llama-quantize", "llama-imatrix", "llama-cli", "llama-server")
 _PPL_RE = re.compile(r"Final estimate:\s*PPL\s*=\s*([0-9.]+)\s*\+/-\s*([0-9.]+)")
 _VERSION_RE = re.compile(r"version:\s*(\d+)\s*\(([0-9a-f]+)\)")
+_VERSION_RE2 = re.compile(r"build\s+(\d+),\s*commit\s+([0-9a-f]+)")
 
 
 def find_binaries(search_dir: Path | None) -> dict[str, list[str]]:
@@ -70,7 +71,7 @@ class LlamaCppEngine(InferenceEngine):
                 out = subprocess.run(self._argv("llama-bench") + ["--version"], capture_output=True,
                                      text=True, timeout=30)
                 text = out.stdout + out.stderr
-                m = _VERSION_RE.search(text)
+                m = _VERSION_RE.search(text) or _VERSION_RE2.search(text)
                 self._version = f"b{m.group(1)} ({m.group(2)})" if m else (text.strip().splitlines() or [None])[0]
             except Exception:
                 self._version = None

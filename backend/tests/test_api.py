@@ -18,7 +18,7 @@ def _wait(c, job_id):
 
 def test_health_and_hardware_cpu_mode(client):
     h = client.get(f"{V}/system/health").json()
-    assert h["status"] == "ok" and h["schema_version"] == 1
+    assert h["status"] == "ok" and h["schema_version"] == 2
     assert h["config"]["max_concurrent_jobs"] == 1 and h["config"]["data_dir"]
     assert {e["name"] for e in h["engines"]} == {"llama.cpp", "pytorch"}
     hw = client.get(f"{V}/system/hardware").json()

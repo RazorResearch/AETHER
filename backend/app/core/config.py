@@ -50,6 +50,16 @@ class Settings:
         return self.data_dir / "artifacts"
 
 
+def _vendored_llamacpp() -> Path | None:
+    """Newest llama.cpp build unpacked under backend/vendor/llama.cpp/ (see README)."""
+    root = Path(__file__).resolve().parents[2] / "vendor" / "llama.cpp"
+    if not root.is_dir():
+        return None
+    builds = sorted((d for d in root.iterdir() if d.is_dir() and any(d.glob("llama-server*"))),
+                    key=lambda d: d.name, reverse=True)
+    return builds[0] if builds else None
+
+
 def load_settings(**overrides) -> Settings:
     data_dir = Path(os.environ.get("AETHER_DATA_DIR", Path.home() / ".aether")).expanduser()
     db_path = Path(os.environ.get("AETHER_DB_PATH", data_dir / "aether.db")).expanduser()
@@ -59,7 +69,7 @@ def load_settings(**overrides) -> Settings:
         data_dir=data_dir,
         db_path=db_path,
         model_dirs=_split_paths(os.environ.get("AETHER_MODEL_DIRS")),
-        llamacpp_dir=Path(llama).expanduser() if llama else None,
+        llamacpp_dir=Path(llama).expanduser() if llama else _vendored_llamacpp(),
     )
     if cors:
         kwargs["cors_origins"] = tuple(o.strip() for o in cors.split(",") if o.strip())

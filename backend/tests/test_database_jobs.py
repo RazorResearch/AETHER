@@ -8,9 +8,9 @@ from app.services.jobs import JobManager
 
 def test_migrations_idempotent(tmp_path):
     db = Database(tmp_path / "a.db")
-    assert db.migrate() == 1
-    assert db.migrate() == 1
-    assert db.schema_version() == 1
+    assert db.migrate() == 2
+    assert db.migrate() == 2
+    assert db.schema_version() == 2
 
 
 def test_crud_and_json_columns(tmp_path):
