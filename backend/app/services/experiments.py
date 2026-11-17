@@ -61,9 +61,11 @@ class ExperimentService:
             self.s.db.update("experiments", exp_id, {"status": job["status"], "result": job.get("result"),
                                                      "updated_at": utcnow()})
 
+        # status must be written *before* submission: a fast job may finish immediately
+        self.s.db.update("experiments", exp_id, {"status": "queued", "result": None, "updated_at": utcnow()})
         job = self.s.jobs.submit(f"experiment:{exp['type']}", {"experiment_id": exp_id}, work, done,
                                  category="experiment")
-        self.s.db.update("experiments", exp_id, {"status": "queued", "job_id": job["id"], "updated_at": utcnow()})
+        self.s.db.update("experiments", exp_id, {"job_id": job["id"]})
         self.s.activity.log("experiment", "experiment.started", f"Experiment '{exp['name']}' started", "info",
                             {"experiment_id": exp_id, "job_id": job["id"]})
         return self.get(exp_id)
