@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { cn } from '@/utils/cn';
+import { useT } from '@/i18n';
 
 export type BadgeTone = 'neutral' | 'accent' | 'glacier' | 'ok' | 'warn' | 'danger' | 'muted';
 
@@ -79,16 +80,17 @@ const provenanceStyle: Record<Provenance, { label: string; dot: string; title: s
 
 export function ProvenanceBadge({ kind = 'live', className }: { kind?: Provenance; className?: string }) {
   const p = provenanceStyle[kind];
+  const t = useT();
   return (
     <span
       className={cn(
         'inline-flex items-center gap-1.5 rounded-sm border border-line/80 px-1.5 py-[2px] font-mono text-[11.5px] uppercase tracking-[0.12em] text-ink-mute',
         className,
       )}
-      title={p.title}
+      title={t(p.title)}
     >
       <span className={cn('h-[4px] w-[4px] rounded-[1px]', p.dot)} />
-      {p.label}
+      {t(p.label)}
     </span>
   );
 }

@@ -2,10 +2,11 @@ import { Link, useLocation } from 'react-router-dom';
 import { Settings2 } from 'lucide-react';
 import { Logo } from '@/components/ui/Logo';
 import { NavLinkItem } from '@/components/navigation/NavLinkItem';
-import { navSections } from '@/components/navigation/navConfig';
+import { findNavItem, navSections } from '@/components/navigation/navConfig';
 import { useEngineStore } from '@/store/useEngineStore';
 import { APP_CHANNEL, APP_VERSION } from '@/store/defaults';
 import { cn } from '@/utils/cn';
+import { useT } from '@/i18n';
 
 /** Persistent workspace navigation rail. */
 export function Sidebar() {
@@ -16,6 +17,7 @@ export function Sidebar() {
   const llama = health?.engines.find((e) => e.name === 'llama.cpp');
   const online = connection === 'online';
   const location = useLocation();
+  const t = useT();
 
   const counters = {
     models: models.length,
@@ -40,7 +42,7 @@ export function Sidebar() {
         {navSections.map((section, index) => (
           <div key={section.id} className={cn(index > 0 && 'mt-5')}>
             <div className="mb-1.5 hidden px-2 font-mono text-[11.5px] uppercase tracking-[0.16em] text-ink-mute/60 lg:block">
-              {section.label}
+              {t(section.label)}
             </div>
             <div className="space-y-px">
               {section.items.map((item) => (
@@ -66,15 +68,15 @@ export function Sidebar() {
                 online ? 'text-ok/90' : connection === 'connecting' ? 'text-ink-mute' : 'text-danger/90',
               )}
             >
-              {online ? `engine online · v${health?.version}` : connection === 'connecting' ? 'connecting…' : 'engine offline'}
+              {online ? t('engine online · v{v}', { v: health?.version ?? '' }) : connection === 'connecting' ? t('connecting…') : t('engine offline')}
             </span>
           </div>
           <p className="mt-1 text-[12.5px] leading-snug text-ink-mute/80">
             {online
               ? llama?.available
-                ? `llama.cpp ${llama.version ?? ''} attached.`
-                : 'llama.cpp not found: analysis and estimates only.'
-              : 'Start backend/ to load real data.'}
+                ? t('llama.cpp {v} attached.', { v: llama.version ?? '' })
+                : t('llama.cpp not found: analysis and estimates only.')
+              : t('Start backend/ to load real data.')}
           </p>
         </div>
 
@@ -87,10 +89,10 @@ export function Sidebar() {
           </span>
           <span className="hidden min-w-0 flex-1 lg:block">
             <span className="block truncate text-[13px] leading-tight text-ink-dim">
-              Local operator
+              {t('Local operator')}
             </span>
             <span className="block truncate font-mono text-[11.5px] leading-tight text-ink-mute/70">
-              local · no account
+              {t('local · no account')}
             </span>
           </span>
           <Settings2 className="hidden h-3 w-3 text-ink-mute/70 lg:block" />
@@ -102,7 +104,7 @@ export function Sidebar() {
             className="hidden truncate font-mono text-[11.5px] uppercase tracking-[0.08em] text-ink-mute/50 lg:block"
             title={location.pathname}
           >
-            {location.pathname.replace('/', '') || 'overview'}
+            {t(findNavItem(location.pathname)?.label ?? 'Overview')}
           </span>
         </div>
       </div>

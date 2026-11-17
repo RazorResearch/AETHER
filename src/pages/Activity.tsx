@@ -13,6 +13,7 @@ import { activityCategories } from '@/store/defaults';
 import { useEngineStore } from '@/store/useEngineStore';
 import type { ActivityCategory } from '@/types';
 import { formatRelative } from '@/utils/format';
+import { useT } from '@/i18n';
 
 type Filter = 'All' | ActivityCategory;
 
@@ -24,6 +25,7 @@ export function ActivityPage() {
 
   const [category, setCategory] = useState<Filter>('All');
   const [query, setQuery] = useState('');
+  const t = useT();
 
   const counts = useMemo(() => {
     const base: Record<string, number> = { All: activity.length };
@@ -47,8 +49,8 @@ export function ActivityPage() {
   return (
     <div className="animate-fade-in">
       <PageHeader
-        title="Activity"
-        subtitle="Audit log written by the AETHER engine: imports, experiments, benchmarks, jobs."
+        title={t('Activity')}
+        subtitle={t('Audit log written by the AETHER engine: imports, experiments, benchmarks, jobs.')}
         meta={<ProvenanceBadge kind={connection === 'online' ? 'live' : 'offline'} />}
       />
 
@@ -58,31 +60,31 @@ export function ActivityPage() {
         <CardHeader
           title={
             <span className="flex items-center gap-2">
-              Events
+              {t('Events')}
               <span className="readout text-[13px] font-normal text-ink-mute">
                 {filtered.length}/{activity.length}
               </span>
             </span>
           }
-          hint={lastEvent ? `Last event ${formatRelative(lastEvent.timestamp)} · newest first · 500 most recent` : 'No events recorded yet.'}
+          hint={lastEvent ? t('Last event {when} · newest first · 500 most recent', { when: formatRelative(lastEvent.timestamp) }) : t('No events recorded yet.')}
         />
 
         <div className="flex flex-wrap items-center gap-2 border-b border-line/40 px-5 py-2.5">
           <Segmented<Filter>
-            ariaLabel="Filter activity by category"
+            ariaLabel={t('Filter activity by category')}
             value={category}
             onChange={setCategory}
             options={[
-              { value: 'All', label: 'All', count: counts.All },
-              ...activityCategories.map((item) => ({ value: item, label: item, count: counts[item] ?? 0 })),
+              { value: 'All', label: t('All'), count: counts.All },
+              ...activityCategories.map((item) => ({ value: item, label: t(item), count: counts[item] ?? 0 })),
             ]}
           />
           <TextInput
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search events…"
+            placeholder={t('Search events…')}
             icon={<Search />}
-            aria-label="Search activity"
+            aria-label={t('Search activity')}
             wrapperClassName="ml-auto w-full max-w-[240px]"
           />
         </div>
@@ -91,8 +93,8 @@ export function ActivityPage() {
           <CardBody>
             <EmptyState
               icon={<ActivityIcon />}
-              title="No activity recorded"
-              description="Engine events appear here as soon as you import a model or start a job."
+              title={t('No activity recorded')}
+              description={t('Engine events appear here as soon as you import a model or start a job.')}
             />
           </CardBody>
         ) : filtered.length === 0 ? (
@@ -100,8 +102,8 @@ export function ActivityPage() {
             <EmptyState
               compact
               icon={<Search />}
-              title="No matching events"
-              description="Try another category or clear the search term."
+              title={t('No matching events')}
+              description={t('Try another category or clear the search term.')}
               action={
                 <Button
                   variant="secondary"
@@ -110,7 +112,7 @@ export function ActivityPage() {
                     setQuery('');
                   }}
                 >
-                  Reset filters
+                  {t('Reset filters')}
                 </Button>
               }
             />

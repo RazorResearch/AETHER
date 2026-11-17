@@ -6,6 +6,7 @@ import { useAppStore } from '@/store/useAppStore';
 import { useEngineStore } from '@/store/useEngineStore';
 import { useClock } from '@/hooks/useTelemetry';
 import { formatTime } from '@/utils/format';
+import { useT } from '@/i18n';
 
 /** Context strip above the page content: location, build status, clock. */
 export function TopBar() {
@@ -14,6 +15,7 @@ export function TopBar() {
   const updateSettings = useAppStore((state) => state.updateSettings);
   const now = useClock();
   const current = findNavItem(location.pathname);
+  const t = useT();
   const connection = useEngineStore((state) => state.connection);
 
   return (
@@ -23,7 +25,7 @@ export function TopBar() {
           AETHER
         </Link>
         <span className="text-ink-mute/30">/</span>
-        <span className="truncate text-ink-dim">{current?.label ?? 'overview'}</span>
+        <span className="truncate text-ink-dim">{t(current?.label ?? 'Overview')}</span>
       </div>
 
       <div className="flex shrink-0 items-center gap-3.5">
@@ -38,7 +40,7 @@ export function TopBar() {
         <button
           type="button"
           onClick={() => updateSettings({ theme: theme === 'dark' ? 'light' : 'dark' })}
-          aria-label={theme === 'dark' ? 'Switch to light appearance' : 'Switch to dark appearance'}
+          aria-label={theme === 'dark' ? t('Switch to light appearance') : t('Switch to dark appearance')}
           className="focus-ring flex h-6 w-6 items-center justify-center rounded-sm border border-line/80 text-ink-mute transition-colors hover:border-ink-mute/40 hover:text-ink"
         >
           {theme === 'dark' ? <Moon className="h-3 w-3" /> : <Sun className="h-3 w-3" />}

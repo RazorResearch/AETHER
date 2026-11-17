@@ -56,7 +56,7 @@ export type SizeUnit = 'GB' | 'GiB';
 export interface WorkspaceSettings {
   theme: ThemeMode;
   unit: SizeUnit;
-  language: 'en';
+  language: 'en' | 'fr';
   restoreLastPage: boolean;
   engineCheckOnLaunch: boolean;
   modelsDirectory: string;

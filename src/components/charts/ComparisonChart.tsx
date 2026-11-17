@@ -12,6 +12,7 @@ import type { BenchmarkMetric } from '@/types';
 import { useChartTheme } from '@/hooks/useTelemetry';
 import { comparisonIndex, signedPercent } from '@/utils/benchmark';
 import { axisTickStyle, tooltipStyle } from './chartStyle';
+import { useT } from '@/i18n';
 
 interface ComparisonChartProps {
   metrics: BenchmarkMetric[];
@@ -24,6 +25,7 @@ interface ComparisonChartProps {
  */
 export function ComparisonChart({ metrics, height = 268 }: ComparisonChartProps) {
   const theme = useChartTheme();
+  const t = useT();
   const tooltip = tooltipStyle(theme);
 
   const data = metrics.map((metric) => {
@@ -68,17 +70,17 @@ export function ComparisonChart({ metrics, height = 268 }: ComparisonChartProps)
             {...tooltip}
             cursor={{ fill: 'rgb(148 163 184 / 0.05)' }}
             formatter={(value: number | string, name: string, item) => {
-              if (name === 'Optimized') {
+              if (name === t('Run B')) {
                 const delta = (item?.payload as { delta?: number } | undefined)?.delta ?? 0;
-                return [`${value} index (${signedPercent(delta)})`, name];
+                return [`${value} ${t('index')} (${signedPercent(delta)})`, name];
               }
-              return [`${value} index`, name];
+              return [`${value} ${t('index')}`, name];
             }}
           />
           <ReferenceLine x={100} stroke={theme.axis} strokeDasharray="2 3" />
           <Bar
             dataKey="baseline"
-            name="Baseline"
+            name={t('Run A (baseline)')}
             fill={theme.axis}
             fillOpacity={0.35}
             barSize={6}
@@ -86,7 +88,7 @@ export function ComparisonChart({ metrics, height = 268 }: ComparisonChartProps)
           />
           <Bar
             dataKey="optimized"
-            name="Optimized"
+            name={t('Run B')}
             fill={theme.accent}
             barSize={6}
             isAnimationActive={false}

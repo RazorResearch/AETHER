@@ -2,15 +2,17 @@ import type { ActivityEvent } from '@/types';
 import { Badge } from '@/components/ui/Badge';
 import { statusTone } from '@/components/cards/ActivityList';
 import { formatDate, formatTime } from '@/utils/format';
+import { useT } from '@/i18n';
 
 /** Full activity ledger: date, time, event type, description, status. */
 export function ActivityTable({ events }: { events: ActivityEvent[] }) {
+  const t = useT();
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[820px] border-collapse text-left">
         <thead>
           <tr className="border-b border-line/70">
-            {['Date', 'Time', 'Category', 'Event', 'Description', 'Status'].map((heading) => (
+            {[t('Date'), t('Time'), t('Category'), t('Event'), t('Description'), t('Status')].map((heading) => (
               <th
                 key={heading}
                 scope="col"
@@ -36,7 +38,7 @@ export function ActivityTable({ events }: { events: ActivityEvent[] }) {
                 </span>
               </td>
               <td className="px-3 py-2">
-                <span className="font-mono text-[12px] text-ink-mute/80">{event.category}</span>
+                <span className="font-mono text-[12px] text-ink-mute/80">{t(event.category)}</span>
               </td>
               <td className="whitespace-nowrap px-3 py-2">
                 <span className="font-mono text-[12px] text-ink-mute">{event.type}</span>
@@ -46,7 +48,7 @@ export function ActivityTable({ events }: { events: ActivityEvent[] }) {
               </td>
               <td className="py-2 pl-3 pr-4 text-right">
                 <Badge tone={statusTone[event.status]} dot>
-                  {event.status}
+                  {t(event.status)}
                 </Badge>
               </td>
             </tr>

@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { Button } from './Button';
 import { cn } from '@/utils/cn';
+import { useT } from '@/i18n';
 
 interface ModalProps {
   open: boolean;
@@ -34,6 +35,7 @@ export function Modal({
   size = 'md',
 }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const t = useT();
 
   useEffect(() => {
     if (!open) return;
@@ -83,7 +85,7 @@ export function Modal({
               </p>
             )}
           </div>
-          <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close dialog">
+          <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label={t('Close dialog')}>
             <X className="h-4 w-4" />
           </Button>
         </div>

@@ -13,7 +13,8 @@ import { StatTile } from '@/components/cards/StatTile';
 import { EngineOffline } from '@/components/engine/EngineOffline';
 import { useAppStore } from '@/store/useAppStore';
 import { useEngineStore } from '@/store/useEngineStore';
-import { formatBytes, formatNumber, formatPercent, formatTime, percentOf } from '@/utils/format';
+import { formatBytes, formatNumber, formatPercent, formatTime, percentOf, unitLabel } from '@/utils/format';
+import { useT } from '@/i18n';
 
 const dash = '—';
 
@@ -26,6 +27,7 @@ export function HardwarePage() {
   const refreshHardware = useEngineStore((s) => s.refreshHardware);
   const unit = useAppStore((s) => s.settings.unit);
   const [refreshing, setRefreshing] = useState(false);
+  const t = useT();
 
   const refresh = async () => {
     setRefreshing(true);
@@ -43,8 +45,8 @@ export function HardwarePage() {
   return (
     <div className="animate-fade-in">
       <PageHeader
-        title="Hardware"
-        subtitle="Device envelope for local inference, read by the AETHER engine (NVML, psutil)."
+        title={t('Hardware')}
+        subtitle={t('Device envelope for local inference, read by the AETHER engine (NVML, psutil).')}
         meta={<ProvenanceBadge kind={connection === 'online' ? 'live' : 'offline'} />}
         actions={
           <Button
@@ -53,7 +55,7 @@ export function HardwarePage() {
             onClick={() => void refresh()}
             disabled={connection !== 'online'}
           >
-            Refresh
+            {t('Refresh')}
           </Button>
         }
       />
@@ -84,11 +86,11 @@ export function HardwarePage() {
             {/* ------------------------------- GPU ------------------------------- */}
             <Card className="xl:col-span-7">
               <CardHeader
-                title={gpu?.name ?? 'No NVIDIA GPU detected'}
+                title={gpu?.name ?? t('No NVIDIA GPU detected')}
                 hint={
                   gpu
-                    ? `GPU ${gpu.index} · compute capability ${gpu.compute_capability ?? dash} · ${gpu.uuid ?? ''}`
-                    : 'NVML is unavailable on this machine: AETHER runs in CPU mode.'
+                    ? `GPU ${gpu.index} · ${t('compute capability')} ${gpu.compute_capability ?? dash} · ${gpu.uuid ?? ''}`
+                    : t('NVML is unavailable on this machine: AETHER runs in CPU mode.')
                 }
                 action={<Badge tone={hw.accelerator === 'cuda' ? 'ok' : 'neutral'} dot>{hw.accelerator}</Badge>}
               />
@@ -97,8 +99,8 @@ export function HardwarePage() {
                   <EmptyState
                     compact
                     icon={<Cpu />}
-                    title="CPU-only mode"
-                    description="No NVIDIA device was reported by NVML. Inference and benchmarks will run on the CPU."
+                    title={t('CPU-only mode')}
+                    description={t('No NVIDIA device was reported by NVML. Inference and benchmarks will run on the CPU.')}
                   />
                 ) : (
                   <>
@@ -113,19 +115,19 @@ export function HardwarePage() {
                               ? formatNumber(gpu.vram_used_bytes / (unit === 'GB' ? 1e9 : 1024 ** 3), 1)
                               : dash
                           }
-                          unit={unit}
-                          ariaLabel="GPU VRAM usage"
+                          unit={unitLabel(unit)}
+                          ariaLabel={t('GPU VRAM usage')}
                         />
                         <div>
                           <div className="font-mono text-[12px] uppercase tracking-[0.16em] text-ink-mute">
-                            vram in use (all processes)
+                            {t('vram in use (all processes)')}
                           </div>
                           <div className="readout mt-1 text-[14px] text-ink">
                             {gpu.vram_used_bytes != null ? formatBytes(gpu.vram_used_bytes, unit) : dash} /{' '}
                             {gpu.vram_total_bytes != null ? formatBytes(gpu.vram_total_bytes, unit) : dash}
                           </div>
                           <div className="mt-1 text-[13px] text-ink-mute">
-                            {gpu.vram_free_bytes != null ? formatBytes(gpu.vram_free_bytes, unit) : dash} free
+                            {gpu.vram_free_bytes != null ? formatBytes(gpu.vram_free_bytes, unit) : dash} {t('free')}
                           </div>
                           <div className="mt-3">
                             <Sparkline values={vramTrend} width={122} height={26} tone="accent" />
@@ -135,16 +137,16 @@ export function HardwarePage() {
 
                       <div className="grid flex-1 grid-cols-2 gap-x-5 gap-y-3.5 sm:grid-cols-4 2xl:grid-cols-2">
                         <StatTile
-                          label="Utilization"
+                          label={t('Utilization')}
                           value={gpu.utilization_gpu_percent != null ? formatPercent(gpu.utilization_gpu_percent) : dash}
                           detail={
                             gpu.utilization_memory_percent != null
-                              ? `memory controller ${formatPercent(gpu.utilization_memory_percent)}`
-                              : 'SM busy time'
+                              ? `${t('memory controller')} ${formatPercent(gpu.utilization_memory_percent)}`
+                              : t('SM busy time')
                           }
                         />
                         <StatTile
-                          label="Temperature"
+                          label={t('Temperature')}
                           value={
                             gpu.temperature_c != null ? (
                               <span className="flex items-baseline gap-1">
@@ -155,26 +157,26 @@ export function HardwarePage() {
                               dash
                             )
                           }
-                          detail="Die sensor"
+                          detail={t('Die sensor')}
                           badge={<Thermometer className="h-3 w-3 text-ink-mute/60" />}
                         />
                         <StatTile
-                          label="Power"
+                          label={t('Power')}
                           value={gpu.power_draw_w != null ? `${formatNumber(gpu.power_draw_w, 1)} W` : dash}
-                          detail={gpu.power_limit_w != null ? `limit ${formatNumber(gpu.power_limit_w, 0)} W` : undefined}
+                          detail={gpu.power_limit_w != null ? `${t('limit')} ${formatNumber(gpu.power_limit_w, 0)} W` : undefined}
                           badge={<Zap className="h-3 w-3 text-ink-mute/60" />}
                         />
                         <StatTile
-                          label="Sampling"
+                          label={t('Sampling')}
                           value={<span className="text-[13.5px]">3 s</span>}
-                          detail={`last ${formatTime(hw.captured_at)} · energy counter ${gpu.energy_counter_supported ? 'yes' : 'no'}`}
+                          detail={`${t('last')} ${formatTime(hw.captured_at)} · ${t('energy counter')} ${gpu.energy_counter_supported ? t('yes') : t('no')}`}
                         />
                       </div>
                     </div>
 
                     <div className="mt-4 border-t border-line/40 pt-3">
                       <div className="mb-1.5 flex items-center justify-between font-mono text-[12px] uppercase tracking-[0.12em] text-ink-mute">
-                        <span>vram allocation</span>
+                        <span>{t('vram allocation')}</span>
                         <span>{formatPercent(vramPct, 1)}</span>
                       </div>
                       <ProgressBar value={vramPct} height="sm" tone={vramPct > 85 ? 'danger' : 'accent'} />
@@ -187,24 +189,23 @@ export function HardwarePage() {
             {/* --------------------------- memory + disk -------------------------- */}
             <div className="space-y-3 xl:col-span-5">
               <Card>
-                <CardHeader title="Host RAM" action={<MemoryStick className="h-3.5 w-3.5 text-ink-mute/60" />} />
+                <CardHeader title={t('Host RAM')} action={<MemoryStick className="h-3.5 w-3.5 text-ink-mute/60" />} />
                 <CardBody>
                   <div className="flex items-end justify-between">
                     <div>
                       <div className="readout text-[22px] font-medium leading-none text-ink">
                         {formatBytes(hw.memory.used_bytes, unit)}
-                        <span className="ml-1 text-[13px] text-ink-mute">used</span>
+                        <span className="ml-1 text-[13px] text-ink-mute">{t('used')}</span>
                       </div>
                       <div className="mt-1.5 text-[13px] text-ink-mute">
-                        {formatBytes(hw.memory.available_bytes, unit)} available of{' '}
-                        {formatBytes(hw.memory.total_bytes, unit)}
+                        {t('{avail} available of {total}', { avail: formatBytes(hw.memory.available_bytes, unit), total: formatBytes(hw.memory.total_bytes, unit) })}
                       </div>
                     </div>
                     <Sparkline values={ramTrend} width={96} height={22} tone="glacier" />
                   </div>
                   <ProgressBar value={ramPct} height="sm" tone="glacier" className="mt-3" />
                   <div className="mt-2 flex justify-between font-mono text-[12px] text-ink-mute/70">
-                    <span>{formatPercent(ramPct, 1)} engaged</span>
+                    <span>{formatPercent(ramPct, 1)} {t('engaged')}</span>
                     <span>
                       swap {formatBytes(hw.memory.swap_used_bytes, unit)} / {formatBytes(hw.memory.swap_total_bytes, unit)}
                     </span>
@@ -213,9 +214,9 @@ export function HardwarePage() {
               </Card>
 
               <Card>
-                <CardHeader title="Volumes" hint="Engine data and model directories" action={<HardDrive className="h-3.5 w-3.5 text-ink-mute/60" />} />
+                <CardHeader title={t('Volumes')} hint={t('Engine data and model directories')} action={<HardDrive className="h-3.5 w-3.5 text-ink-mute/60" />} />
                 <CardBody className="space-y-3">
-                  {hw.disks.length === 0 && <p className="text-[13px] text-ink-mute">No volume reported.</p>}
+                  {hw.disks.length === 0 && <p className="text-[13px] text-ink-mute">{t("No volume reported.")}</p>}
                   {hw.disks.map((d) => {
                     const p = percentOf(d.used_bytes, d.total_bytes);
                     return (
@@ -225,13 +226,13 @@ export function HardwarePage() {
                             {d.path}
                           </span>
                           <span className="readout shrink-0 text-[13px] text-ink">
-                            {formatBytes(d.free_bytes, unit)} free
+                            {formatBytes(d.free_bytes, unit)} {t('free')}
                           </span>
                         </div>
                         <ProgressBar value={p} height="sm" tone={p > 90 ? 'danger' : 'ok'} className="mt-1.5" />
                         <div className="mt-1 flex justify-between font-mono text-[12px] text-ink-mute/70">
-                          <span>{formatBytes(d.used_bytes, unit)} used</span>
-                          <span>{formatBytes(d.total_bytes, unit)} total</span>
+                          <span>{formatBytes(d.used_bytes, unit)} {t('used')}</span>
+                          <span>{formatBytes(d.total_bytes, unit)} {t('total')}</span>
                         </div>
                       </div>
                     );
@@ -244,13 +245,13 @@ export function HardwarePage() {
             <Card className="xl:col-span-7">
               <CardHeader
                 title={hw.cpu.model ?? 'CPU'}
-                hint={`${hw.cpu.physical_cores ?? dash} physical · ${hw.cpu.logical_cores ?? dash} logical cores · ${hw.cpu.architecture ?? ''}${hw.cpu.frequency_mhz ? ` · ${formatNumber(hw.cpu.frequency_mhz, 0)} MHz` : ''}`}
+                hint={`${t('{p} physical · {l} logical cores', { p: hw.cpu.physical_cores ?? dash, l: hw.cpu.logical_cores ?? dash })} · ${hw.cpu.architecture ?? ''}${hw.cpu.frequency_mhz ? ` · ${formatNumber(hw.cpu.frequency_mhz, 0)} MHz` : ''}`}
               />
               <CardBody>
                 <div className="flex flex-wrap items-end justify-between gap-3">
                   <div className="readout text-[22px] font-medium leading-none text-ink">
                     {hw.cpu.utilization_percent != null ? formatPercent(hw.cpu.utilization_percent) : dash}
-                    <span className="ml-2 text-[13px] font-normal text-ink-mute">aggregate load</span>
+                    <span className="ml-2 text-[13px] font-normal text-ink-mute">{t('aggregate load')}</span>
                   </div>
                   <Sparkline values={cpuTrend} width={140} height={24} tone="warn" />
                 </div>
@@ -259,7 +260,7 @@ export function HardwarePage() {
                   {hw.cpu.per_core_utilization_percent.map((load, index) => (
                     <div key={index}>
                       <div
-                        title={`Core ${index} · ${formatNumber(load, 0)}%`}
+                        title={`${t('Core')} ${index} · ${formatNumber(load, 0)}%`}
                         className="relative h-7 overflow-hidden rounded-[3px] border border-line/60 bg-surface2"
                       >
                         <div
@@ -274,26 +275,26 @@ export function HardwarePage() {
                   ))}
                 </div>
                 <p className="mt-3 border-t border-line/40 pt-2.5 font-mono text-[12px] text-ink-mute/70">
-                  per-logical-core load sampled over 100 ms · {formatTime(hw.captured_at)}
+                  {t('per-logical-core load sampled over 100 ms')} · {formatTime(hw.captured_at)}
                 </p>
               </CardBody>
             </Card>
 
             {/* ------------------------- software stack ------------------------- */}
             <Card className="xl:col-span-5">
-              <CardHeader title="Software stack" hint="Versions reported by the engine host" />
+              <CardHeader title={t('Software stack')} hint={t('Versions reported by the engine host')} />
               <CardBody className="space-y-2">
                 {[
                   ['OS', `${hw.software.os} ${hw.software.os_release}`],
-                  ['NVIDIA driver', hw.software.nvidia_driver_version],
-                  ['CUDA (driver max)', hw.software.cuda_driver_version],
+                  [t('NVIDIA driver'), hw.software.nvidia_driver_version],
+                  [t('CUDA (driver max)'), hw.software.cuda_driver_version],
                   ['CUDA runtime (PyTorch)', hw.software.cuda_runtime_version],
                   ['NVML', hw.software.nvml_version],
                   ['Python', hw.software.python],
                   ['PyTorch', hw.software.torch_version],
                   ...(health?.engines ?? []).map((e) => [
                     e.name,
-                    e.available ? `available${e.version ? ` · ${e.version}` : ''}` : 'not available',
+                    e.available ? `${t('available')}${e.version ? ` · ${e.version}` : ''}` : t('not available'),
                   ]),
                 ].map(([label, value]) => (
                   <div key={label} className="flex items-baseline justify-between gap-3 border-b border-line/30 pb-1.5 last:border-0">

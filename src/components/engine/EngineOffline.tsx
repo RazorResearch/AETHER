@@ -2,6 +2,7 @@ import { PlugZap, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useEngineStore } from '@/store/useEngineStore';
 import { API_BASE } from '@/api/client';
+import { useT } from '@/i18n';
 
 /**
  * Shown in place of data when the engine is unreachable. AETHER never falls
@@ -11,6 +12,7 @@ export function EngineOffline({ compact = false }: { compact?: boolean }) {
   const connection = useEngineStore((s) => s.connection);
   const lastError = useEngineStore((s) => s.lastError);
   const refreshAll = useEngineStore((s) => s.refreshAll);
+  const t = useT();
 
   if (connection === 'online') return null;
 
@@ -18,7 +20,7 @@ export function EngineOffline({ compact = false }: { compact?: boolean }) {
     return (
       <div className="mb-3 flex items-center gap-2 border-l-2 border-line pl-3 text-[13.5px] text-ink-mute">
         <RefreshCw className="h-3 w-3 animate-spin" />
-        Connecting to the AETHER engine…
+        {t('Connecting to the AETHER engine…')}
       </div>
     );
   }
@@ -28,9 +30,9 @@ export function EngineOffline({ compact = false }: { compact?: boolean }) {
       <div className="flex flex-wrap items-start gap-3">
         <PlugZap className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
         <div className="min-w-0 flex-1">
-          <div className="text-[14px] font-medium text-ink">Engine offline — no data displayed</div>
+          <div className="text-[14px] font-medium text-ink">{t("Engine offline — no data displayed")}</div>
           <p className="mt-1 text-[13px] leading-relaxed text-ink-dim">
-            The UI shows only values read from the AETHER engine ({API_BASE}). {lastError}
+            {t('The UI shows only values read from the AETHER engine ({url}).', { url: API_BASE })} {lastError && t(lastError)}
           </p>
           {!compact && (
             <pre className="mt-2 overflow-x-auto rounded border border-line/70 bg-base/60 px-3 py-2 font-mono text-[12.5px] text-ink-dim">
@@ -40,7 +42,7 @@ export function EngineOffline({ compact = false }: { compact?: boolean }) {
           )}
         </div>
         <Button variant="secondary" icon={<RefreshCw />} onClick={() => void refreshAll()}>
-          Retry
+          {t('Retry')}
         </Button>
       </div>
     </div>

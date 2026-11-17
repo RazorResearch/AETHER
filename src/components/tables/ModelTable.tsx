@@ -5,6 +5,7 @@ import { Segmented } from '@/components/ui/Field';
 import { fileName, formatContext, formatParams } from '@/api/adapters';
 import { formatBytes, formatRelative } from '@/utils/format';
 import type { SizeUnit } from '@/types';
+import { useT } from '@/i18n';
 
 interface ModelTableProps {
   models: ModelSummary[];
@@ -14,12 +15,13 @@ interface ModelTableProps {
 }
 
 export function ModelTable({ models, unit, onOpen, onDelete }: ModelTableProps) {
+  const t = useT();
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[900px] border-collapse text-left">
         <thead>
           <tr className="border-b border-line/70">
-            {['Model', 'Arch', 'Params', 'Format', 'Quantization', 'Size', 'Context', 'Status', 'Imported', ''].map(
+            {[t('Model'), t('Arch'), t('Params'), t('Format'), t('Quantization'), t('Size'), t('Context'), t('Status'), t('Imported'), ''].map(
               (heading) => (
                 <th
                   key={heading}
@@ -65,7 +67,7 @@ export function ModelTable({ models, unit, onOpen, onDelete }: ModelTableProps) 
               </td>
               <td className="px-3 py-2">
                 <Badge tone={model.status === 'available' ? 'ok' : 'danger'} dot>
-                  {model.status === 'available' ? 'Available' : 'File missing'}
+                  {model.status === 'available' ? t('Available') : t('File missing')}
                 </Badge>
               </td>
               <td className="px-3 py-2">
@@ -77,7 +79,7 @@ export function ModelTable({ models, unit, onOpen, onDelete }: ModelTableProps) 
                 <div className="flex items-center justify-end gap-0.5">
                   <button
                     type="button"
-                    aria-label={`Remove ${model.name}`}
+                    aria-label={t('Remove {name}', { name: model.name })}
                     onClick={(event) => {
                       event.stopPropagation();
                       onDelete(model);
@@ -109,13 +111,14 @@ export function FormatFilter({
   onChange: (value: FormatValue) => void;
   counts: Record<FormatValue, number>;
 }) {
+  const t = useT();
   return (
     <Segmented
-      ariaLabel="Filter models by format"
+      ariaLabel={t('Filter models by format')}
       value={value}
       onChange={onChange}
       options={[
-        { value: 'all', label: 'All', count: counts.all },
+        { value: 'all', label: t('All'), count: counts.all },
         { value: 'gguf', label: 'GGUF', count: counts.gguf },
         { value: 'safetensors', label: 'Safetensors', count: counts.safetensors },
       ]}

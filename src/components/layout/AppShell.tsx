@@ -5,6 +5,7 @@ import { TopBar } from './TopBar';
 import { Toasts } from '@/components/ui/Toasts';
 import { useAppStore } from '@/store/useAppStore';
 import { toast } from '@/store/useToastStore';
+import { tNow } from '@/i18n';
 import { useEngineStore, useEngineSync } from '@/store/useEngineStore';
 
 /**
@@ -20,10 +21,13 @@ export function AppShell() {
   const didLaunch = useRef(false);
   useEngineSync();
 
-  /* Apply the theme token set to the document. */
+  /* Apply the theme token set and language to the document. */
   useEffect(() => {
     document.documentElement.dataset.theme = settings.theme;
   }, [settings.theme]);
+  useEffect(() => {
+    document.documentElement.lang = settings.language;
+  }, [settings.language]);
 
   /* Launch behaviours run once per session. */
   useEffect(() => {
@@ -39,13 +43,13 @@ export function AppShell() {
         if (connection === 'online' && health) {
           const llama = health.engines.find((e) => e.name === 'llama.cpp');
           toast.success(
-            `Engine connected · v${health.version}`,
+            tNow('Engine connected · v{v}', { v: health.version }),
             llama?.available
-              ? `llama.cpp ${llama.version ?? ''} available for benchmarks.`
-              : 'llama.cpp not found: analysis and estimates only, no benchmarks.',
+              ? tNow('llama.cpp {v} available for benchmarks.', { v: llama.version ?? '' })
+              : tNow('llama.cpp not found: analysis and estimates only, no benchmarks.'),
           );
         } else {
-          toast.warning('Engine offline', 'Start the AETHER engine (backend/) to see real data.');
+          toast.warning(tNow('Engine offline'), tNow('Start the AETHER engine (backend/) to see real data.'));
         }
       }, 1500);
     }

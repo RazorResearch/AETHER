@@ -13,7 +13,8 @@ import { EngineOffline } from '@/components/engine/EngineOffline';
 import { formatParams, toActivityEvent } from '@/api/adapters';
 import { useAppStore } from '@/store/useAppStore';
 import { useEngineStore } from '@/store/useEngineStore';
-import { formatBytes, formatNumber, formatRelative } from '@/utils/format';
+import { formatBytes, formatNumber, formatRelative, unitLabel } from '@/utils/format';
+import { useT } from '@/i18n';
 
 const dash = '—';
 
@@ -28,6 +29,7 @@ export function OverviewPage() {
   const connection = useEngineStore((s) => s.connection);
   const unit = useAppStore((s) => s.settings.unit);
   const online = connection === 'online';
+  const t = useT();
 
   const activity = useMemo(() => rawActivity.map(toActivityEvent), [rawActivity]);
   const gpu = hw?.gpus[0];
@@ -59,14 +61,14 @@ export function OverviewPage() {
 
   return (
     <div className="animate-fade-in">
-      <PageHeader title="Overview" subtitle="Local AI optimization workspace." meta={<ProvenanceBadge kind={online ? 'live' : 'offline'} />} />
+      <PageHeader title={t('Overview')} subtitle={t('Local AI optimization workspace.')} meta={<ProvenanceBadge kind={online ? 'live' : 'offline'} />} />
 
       <EngineOffline />
 
       <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-[13.5px] font-medium text-ink-dim">Hardware</h2>
+        <h2 className="text-[13.5px] font-medium text-ink-dim">{t("Hardware")}</h2>
         <Link to="/hardware" className="focus-ring inline-flex items-center gap-1 rounded-sm text-[12.5px] text-ink-mute transition-colors hover:text-ink">
-          Full diagnostics <ArrowUpRight className="h-3 w-3" />
+          {t('Full diagnostics')} <ArrowUpRight className="h-3 w-3" />
         </Link>
       </div>
 
@@ -74,51 +76,51 @@ export function OverviewPage() {
         <div className="grid grid-cols-1 gap-px bg-line/50 sm:grid-cols-2 xl:grid-cols-4">
           {!hw && connection === 'offline' ? (
             <div className="col-span-full bg-surface px-4 py-8 text-center text-[13.5px] text-ink-mute">
-              No hardware data — the engine is offline.
+              {t('No hardware data — the engine is offline.')}
             </div>
           ) : !hw ? (
             Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-[118px] w-full rounded-none" />)
           ) : (
             <>
               <MetricCard
-                label="GPU VRAM usage"
+                label={t('GPU VRAM usage')}
                 value={gpu?.vram_used_bytes != null ? formatNumber(gpu.vram_used_bytes / div, 1) : dash}
-                unit={gpu ? unit : ''}
-                secondary={gpu?.vram_total_bytes != null ? `of ${formatBytes(gpu.vram_total_bytes, unit)} · ${gpu.name ?? ''}` : 'no NVIDIA GPU detected'}
+                unit={gpu ? unitLabel(unit) : ''}
+                secondary={gpu?.vram_total_bytes != null ? t('of {total} · {name}', { total: formatBytes(gpu.vram_total_bytes, unit), name: gpu.name ?? '' }) : t('no NVIDIA GPU detected')}
                 percent={vramPct}
                 trend={trend('vramPct')}
                 tone="accent"
-                detail="Device memory in use by all processes, read through NVML."
+                detail={t('Device memory in use by all processes, read through NVML.')}
               />
               <MetricCard
-                label="System RAM usage"
+                label={t('System RAM usage')}
                 value={formatNumber(hw.memory.used_bytes / div, 1)}
-                unit={unit}
-                secondary={`of ${formatBytes(hw.memory.total_bytes, unit)} · ${formatBytes(hw.memory.available_bytes, unit)} available`}
+                unit={unitLabel(unit)}
+                secondary={t('of {total} · {avail} available', { total: formatBytes(hw.memory.total_bytes, unit), avail: formatBytes(hw.memory.available_bytes, unit) })}
                 percent={hw.memory.percent}
                 trend={trend('ramPct')}
                 tone="glacier"
-                detail="Host memory in use, read through psutil."
+                detail={t('Host memory in use, read through psutil.')}
               />
               <MetricCard
-                label="GPU utilization"
+                label={t('GPU utilization')}
                 value={gpu?.utilization_gpu_percent != null ? formatNumber(gpu.utilization_gpu_percent, 0) : dash}
                 unit={gpu?.utilization_gpu_percent != null ? '%' : ''}
-                secondary={gpu?.temperature_c != null ? `die ${gpu.temperature_c} °C · ${gpu.power_draw_w != null ? `${formatNumber(gpu.power_draw_w, 0)} W` : ''}` : 'not available'}
+                secondary={gpu?.temperature_c != null ? `${t('die')} ${gpu.temperature_c} °C · ${gpu.power_draw_w != null ? `${formatNumber(gpu.power_draw_w, 0)} W` : ''}` : t('not available')}
                 percent={gpu?.utilization_gpu_percent ?? 0}
                 trend={trend('gpuUtil')}
                 tone="ok"
-                detail="Share of time the GPU executed kernels over the last NVML sample period."
+                detail={t('Share of time the GPU executed kernels over the last NVML sample period.')}
               />
               <MetricCard
-                label="CPU utilization"
+                label={t('CPU utilization')}
                 value={hw.cpu.utilization_percent != null ? formatNumber(hw.cpu.utilization_percent, 0) : dash}
                 unit="%"
-                secondary={`${hw.cpu.logical_cores ?? dash} logical cores · ${hw.cpu.model ?? ''}`}
+                secondary={t('{n} logical cores · {model}', { n: hw.cpu.logical_cores ?? dash, model: hw.cpu.model ?? '' })}
                 percent={hw.cpu.utilization_percent ?? 0}
                 trend={trend('cpuUtil')}
                 tone="warn"
-                detail="Mean load over all logical cores (100 ms sample)."
+                detail={t('Mean load over all logical cores (100 ms sample).')}
               />
             </>
           )}
@@ -126,24 +128,24 @@ export function OverviewPage() {
         <div className="flex items-center gap-2 border-t border-line/50 px-4 py-2 text-[12.5px] text-ink-mute">
           <ProvenanceBadge kind={online ? 'live' : 'offline'} />
           <span>
-            {hw ? `Read by the engine every 3 s · sparklines show this session's samples (${history.length})` : 'Waiting for the engine…'}
+            {hw ? t("Read by the engine every 3 s · sparklines show this session's samples ({n})", { n: history.length }) : t('Waiting for the engine…')}
           </span>
         </div>
       </Card>
 
       <div className="mt-3 grid grid-cols-1 gap-3 xl:grid-cols-12">
         <Card className="xl:col-span-8">
-          <CardHeader title="Measured decode throughput" hint="Latest completed benchmarks (llama-bench tg, mean ± std)." action={<ProvenanceBadge kind="measured" />} />
+          <CardHeader title={t('Measured decode throughput')} hint={t('Latest completed benchmarks (llama-bench tg, mean ± std).')} action={<ProvenanceBadge kind="measured" />} />
           <CardBody>
             {measured.length === 0 ? (
               <EmptyState
                 compact
                 icon={<BarChart3 />}
-                title="No measurement yet"
-                description="Throughput appears here once a benchmark has actually run. Nothing is extrapolated."
+                title={t('No measurement yet')}
+                description={t('Throughput appears here once a benchmark has actually run. Nothing is extrapolated.')}
                 action={
                   <Link to="/benchmarks" className="focus-ring inline-flex h-8 items-center rounded border border-line px-3 text-[13.5px] text-ink-dim hover:text-ink">
-                    Open benchmarks
+                    {t('Open benchmarks')}
                   </Link>
                 }
               />
@@ -171,19 +173,19 @@ export function OverviewPage() {
         </Card>
 
         <Card className="xl:col-span-4">
-          <CardHeader title="Library state" action={<Link to="/models" className="focus-ring rounded-sm text-[12.5px] text-ink-mute hover:text-ink">library</Link>} />
+          <CardHeader title={t('Library state')} action={<Link to="/models" className="focus-ring rounded-sm text-[12.5px] text-ink-mute hover:text-ink">{t('library')}</Link>} />
           <CardBody className="space-y-3">
             <div className="grid grid-cols-3 gap-2">
-              <StatTile label="Models" value={models.length} badge={<Boxes className="h-3 w-3 text-ink-mute/60" />} />
-              <StatTile label="Experiments" value={experiments.length} badge={<FlaskConical className="h-3 w-3 text-ink-mute/60" />} />
-              <StatTile label="Benchmarks" value={benchmarks.length} badge={<BarChart3 className="h-3 w-3 text-ink-mute/60" />} />
+              <StatTile label={t('Models')} value={models.length} badge={<Boxes className="h-3 w-3 text-ink-mute/60" />} />
+              <StatTile label={t('Experiments')} value={experiments.length} badge={<FlaskConical className="h-3 w-3 text-ink-mute/60" />} />
+              <StatTile label={t('Benchmarks')} value={benchmarks.length} badge={<BarChart3 className="h-3 w-3 text-ink-mute/60" />} />
             </div>
             <div className="rounded-md border border-line/70 bg-raised/40 px-3 py-3">
               <div className="flex items-center justify-between">
-                <span className="font-mono text-[12px] uppercase tracking-[0.14em] text-ink-mute">Last imported</span>
+                <span className="font-mono text-[12px] uppercase tracking-[0.14em] text-ink-mute">{t("Last imported")}</span>
                 {lastModel && (
                   <Badge tone={lastModel.status === 'available' ? 'ok' : 'danger'} dot>
-                    {lastModel.status}
+                    {t(lastModel.status)}
                   </Badge>
                 )}
               </div>
@@ -194,17 +196,17 @@ export function OverviewPage() {
                     {lastModel.quantization ?? dash} · {lastModel.architecture ?? dash} · {formatParams(lastModel.n_params)} ·{' '}
                     {formatBytes(lastModel.file_size_bytes, unit)}
                   </div>
-                  <div className="mt-2 text-[12.5px] text-ink-mute">registered {formatRelative(lastModel.created_at)}</div>
+                  <div className="mt-2 text-[12.5px] text-ink-mute">{t('registered {when}', { when: formatRelative(lastModel.created_at) })}</div>
                 </>
               ) : (
-                <p className="mt-2 text-[13.5px] text-ink-mute">No model registered yet.</p>
+                <p className="mt-2 text-[13.5px] text-ink-mute">{t("No model registered yet.")}</p>
               )}
             </div>
             <Link
               to="/optimization"
               className="focus-ring inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-md border border-line bg-surface2/70 text-[13.5px] font-medium text-ink transition-colors hover:border-accent/40 hover:text-accent"
             >
-              Estimate & optimize <ArrowRight className="h-3.5 w-3.5" />
+              {t('Estimate & optimize')} <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </CardBody>
         </Card>
@@ -213,16 +215,16 @@ export function OverviewPage() {
       <div className="mt-3 grid grid-cols-1 gap-3 xl:grid-cols-12">
         <Card className="xl:col-span-7">
           <CardHeader
-            title="Engine events"
+            title={t('Engine events')}
             action={
               <Link to="/activity" className="focus-ring inline-flex items-center gap-1 rounded font-mono text-[12px] uppercase tracking-[0.12em] text-ink-mute hover:text-accent">
-                view log <ArrowUpRight className="h-3 w-3" />
+                {t('view log')} <ArrowUpRight className="h-3 w-3" />
               </Link>
             }
           />
           {activity.length === 0 ? (
             <CardBody>
-              <EmptyState compact icon={<BarChart3 />} title="No events recorded" description="Engine events appear as soon as you import a model or run a job." />
+              <EmptyState compact icon={<BarChart3 />} title={t('No events recorded')} description={t('Engine events appear as soon as you import a model or run a job.')} />
             </CardBody>
           ) : (
             <CardBody className="py-1.5">
@@ -232,18 +234,18 @@ export function OverviewPage() {
         </Card>
 
         <Card className="xl:col-span-5">
-          <CardHeader title="Registered models" action={<ProvenanceBadge kind={online ? 'live' : 'offline'} />} />
+          <CardHeader title={t('Registered models')} action={<ProvenanceBadge kind={online ? 'live' : 'offline'} />} />
           <CardBody className="px-0 py-0">
             {models.length === 0 ? (
               <div className="p-4">
                 <EmptyState
                   compact
                   icon={<Boxes />}
-                  title="Library is empty"
-                  description="Import a local GGUF file to analyse it and estimate its memory footprint."
+                  title={t('Library is empty')}
+                  description={t('Import a local GGUF file to analyse it and estimate its memory footprint.')}
                   action={
                     <Link to="/models" className="focus-ring inline-flex h-8 items-center rounded border border-ink/10 bg-ink px-3 text-[13.5px] font-medium text-base">
-                      Open library
+                      {t('Open library')}
                     </Link>
                   }
                 />
@@ -259,7 +261,7 @@ export function OverviewPage() {
                       </div>
                     </div>
                     <span className="readout text-[13px] text-ink-mute">{formatParams(m.n_params)}</span>
-                    <Badge tone={m.status === 'available' ? 'ok' : 'danger'}>{m.status}</Badge>
+                    <Badge tone={m.status === 'available' ? 'ok' : 'danger'}>{t(m.status)}</Badge>
                   </li>
                 ))}
               </ul>

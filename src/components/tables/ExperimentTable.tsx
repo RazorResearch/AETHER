@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/Badge';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { jobStatusLabel, jobStatusTone, modelLabel } from '@/api/adapters';
 import { formatRelative } from '@/utils/format';
+import { useT } from '@/i18n';
 
 interface ExperimentTableProps {
   experiments: Experiment[];
@@ -13,14 +14,15 @@ interface ExperimentTableProps {
 }
 
 export function ExperimentTable({ experiments, models, types, onOpen }: ExperimentTableProps) {
-  const typeName = (id: string) => types.find((t) => t.id === id)?.name ?? id;
+  const t = useT();
+  const typeName = (id: string) => t(types.find((x) => x.id === id)?.name ?? id);
 
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[880px] border-collapse text-left">
         <thead>
           <tr className="border-b border-line/70">
-            {['Experiment', 'Type', 'Model', 'Status', 'Updated', ''].map((heading) => (
+            {[t('Experiment'), t('Type'), t('Model'), t('Status'), t('Updated'), ''].map((heading) => (
               <th
                 key={heading}
                 scope="col"
@@ -52,7 +54,7 @@ export function ExperimentTable({ experiments, models, types, onOpen }: Experime
                 </td>
                 <td className="min-w-[150px] px-3 py-2">
                   <Badge tone={jobStatusTone[e.status]} dot>
-                    {jobStatusLabel[e.status]}
+                    {t(jobStatusLabel[e.status])}
                   </Badge>
                   {active && e.job && (
                     <div className="mt-1.5">

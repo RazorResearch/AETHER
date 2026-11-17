@@ -4,28 +4,30 @@ import { InfoHint } from '@/components/ui/Tooltip';
 import { comparisonIndex, signedPercent } from '@/utils/benchmark';
 import { formatNumber } from '@/utils/format';
 import { cn } from '@/utils/cn';
+import { useT } from '@/i18n';
 
 /** Absolute values, direction-aware delta and a relative bar per metric. */
 export function MetricComparisonTable({ metrics }: { metrics: BenchmarkMetric[] }) {
+  const t = useT();
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[620px] border-collapse text-left">
         <thead>
           <tr className="border-b border-line/70">
             <th className="py-2 pl-4 pr-3 font-mono text-[11.5px] font-normal uppercase tracking-[0.08em] text-ink-mute/70">
-              Metric
+              {t('Metric')}
             </th>
             <th className="px-3 py-2 text-right font-mono text-[11.5px] font-normal uppercase tracking-[0.08em] text-ink-mute/70">
-              Run A (baseline)
+              {t('Run A (baseline)')}
             </th>
             <th className="px-3 py-2 text-right font-mono text-[11.5px] font-normal uppercase tracking-[0.08em] text-ink-mute/70">
-              Run B
+              {t('Run B')}
             </th>
             <th className="px-3 py-2 text-right font-mono text-[11.5px] font-normal uppercase tracking-[0.08em] text-ink-mute/70">
-              Delta
+              {t('Delta')}
             </th>
             <th className="w-[26%] py-2 pl-3 pr-4 font-mono text-[11.5px] font-normal uppercase tracking-[0.08em] text-ink-mute/70">
-              Relative
+              {t('Relative')}
             </th>
           </tr>
         </thead>

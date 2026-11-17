@@ -17,6 +17,7 @@ import { useAppStore } from '@/store/useAppStore';
 import { useEngineStore } from '@/store/useEngineStore';
 import { toast } from '@/store/useToastStore';
 import { formatBytes, formatDateTime, formatNumber } from '@/utils/format';
+import { useT } from '@/i18n';
 
 /** Local model library, owned by the engine. Files are never copied or deleted. */
 export function ModelsPage() {
@@ -32,6 +33,7 @@ export function ModelsPage() {
   const [detailId, setDetailId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ModelSummary | null>(null);
   const online = connection === 'online';
+  const t = useT();
 
   const counts = useMemo(
     () => ({
@@ -59,28 +61,28 @@ export function ModelsPage() {
     if (!deleteTarget) return;
     try {
       await api.deleteModel(deleteTarget.id);
-      toast.info('Model removed', `${deleteTarget.name} left the library. The file on disk is untouched.`);
+      toast.info(t('Model removed'), t('{name} left the library. The file on disk is untouched.', { name: deleteTarget.name }));
       setDeleteTarget(null);
       setDetailId(null);
       await refreshCollections();
     } catch (error) {
-      toast.error('Removal failed', errorMessage(error));
+      toast.error(t('Removal failed'), errorMessage(error));
     }
   };
 
   return (
     <div className="animate-fade-in">
       <PageHeader
-        title="Models"
-        subtitle="Local model library. Metadata is read from the files by the engine; nothing is copied or downloaded."
+        title={t('Models')}
+        subtitle={t('Local model library. Metadata is read from the files by the engine; nothing is copied or downloaded.')}
         meta={<ProvenanceBadge kind={online ? 'live' : 'offline'} />}
         actions={
           <>
             <Button variant="outline" icon={<FolderSearch />} onClick={() => setDialog('scan')} disabled={!online}>
-              Scan folder
+              {t('Scan folder')}
             </Button>
             <Button variant="primary" icon={<FileUp />} onClick={() => setDialog('import')} disabled={!online}>
-              Import model
+              {t('Import model')}
             </Button>
           </>
         }
@@ -92,13 +94,13 @@ export function ModelsPage() {
         <CardHeader
           title={
             <span className="flex items-center gap-2">
-              Registered models
+              {t('Registered models')}
               <span className="readout text-[13px] font-normal text-ink-mute">
                 {filtered.length}/{models.length}
               </span>
             </span>
           }
-          hint="GGUF headers are parsed by the engine (architecture, tensors, quantization)."
+          hint={t('GGUF headers are parsed by the engine (architecture, tensors, quantization).')}
           action={<FormatFilter value={format} onChange={setFormat} counts={counts} />}
         />
 
@@ -106,14 +108,14 @@ export function ModelsPage() {
           <TextInput
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search by name, path, architecture or quantization…"
+            placeholder={t('Search by name, path, architecture or quantization…')}
             icon={<Search />}
             wrapperClassName="w-full max-w-[380px]"
-            aria-label="Search models"
+            aria-label={t('Search models')}
           />
           <span className="ml-auto hidden items-center gap-1.5 font-mono text-[12px] uppercase tracking-[0.12em] text-ink-mute/70 sm:flex">
             <Info className="h-3 w-3" />
-            sorted by name
+            {t('sorted by name')}
           </span>
         </div>
 
@@ -125,15 +127,15 @@ export function ModelsPage() {
           <CardBody>
             <EmptyState
               icon={<Boxes />}
-              title={online ? 'Your library is empty' : 'No data — engine offline'}
-              description="Register a .gguf or .safetensors file already on this machine, or scan a folder."
+              title={online ? t('Your library is empty') : t('No data — engine offline')}
+              description={t('Register a .gguf or .safetensors file already on this machine, or scan a folder.')}
               action={
                 <div className="flex gap-2">
                   <Button variant="primary" icon={<FileUp />} onClick={() => setDialog('import')} disabled={!online}>
-                    Import model
+                    {t('Import model')}
                   </Button>
                   <Button variant="outline" icon={<FolderSearch />} onClick={() => setDialog('scan')} disabled={!online}>
-                    Scan folder
+                    {t('Scan folder')}
                   </Button>
                 </div>
               }
@@ -144,8 +146,8 @@ export function ModelsPage() {
             <EmptyState
               compact
               icon={<SlidersHorizontal />}
-              title="No model matches these filters"
-              description="Adjust the search term or reset the format filter."
+              title={t('No model matches these filters')}
+              description={t('Adjust the search term or reset the format filter.')}
               action={
                 <Button
                   variant="secondary"
@@ -154,7 +156,7 @@ export function ModelsPage() {
                     setFormat('all');
                   }}
                 >
-                  Reset filters
+                  {t('Reset filters')}
                 </Button>
               }
             />
@@ -182,17 +184,17 @@ export function ModelsPage() {
       <Modal
         open={Boolean(deleteTarget)}
         onClose={() => setDeleteTarget(null)}
-        title="Remove model from library?"
-        kicker="confirmation"
-        description="The library entry is removed. The file on disk is NOT deleted."
+        title={t('Remove model from library?')}
+        kicker={t('confirmation')}
+        description={t('The library entry is removed. The file on disk is NOT deleted.')}
         size="sm"
         footer={
           <>
             <Button variant="ghost" onClick={() => setDeleteTarget(null)}>
-              Cancel
+              {t('Cancel')}
             </Button>
             <Button variant="danger" icon={<Trash2 />} onClick={() => void confirmDelete()}>
-              Remove entry
+              {t('Remove entry')}
             </Button>
           </>
         }
@@ -213,6 +215,7 @@ export function ModelsPage() {
 function ImportDialog({ onClose }: { onClose: () => void }) {
   const refreshCollections = useEngineStore((s) => s.refreshCollections);
   const [path, setPath] = useState('');
+  const t = useT();
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -222,7 +225,7 @@ function ImportDialog({ onClose }: { onClose: () => void }) {
     setError(null);
     try {
       const model = await api.importModel(path.trim().replace(/^"|"$/g, ''), name.trim() || undefined);
-      toast.success('Model imported', `${model.name} · ${model.architecture ?? 'unknown arch'} · ${model.quantization ?? ''}`);
+      toast.success(t('Model imported'), `${model.name} · ${model.architecture ?? t('unknown arch')} · ${model.quantization ?? ''}`);
       await refreshCollections();
       onClose();
     } catch (e) {
@@ -236,23 +239,23 @@ function ImportDialog({ onClose }: { onClose: () => void }) {
     <Modal
       open
       onClose={onClose}
-      title="Import a local model"
-      kicker="engine · import"
-      description="Paste the absolute path of a .gguf or .safetensors file on the engine host. The engine reads its header; the file is never copied, moved or uploaded."
+      title={t('Import a local model')}
+      kicker={t('engine · import')}
+      description={t('Paste the absolute path of a .gguf or .safetensors file on the engine host. The engine reads its header; the file is never copied, moved or uploaded.')}
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>
-            Cancel
+            {t('Cancel')}
           </Button>
           <Button variant="primary" icon={<FileUp />} onClick={() => void submit()} loading={busy} disabled={!path.trim()}>
-            Import
+            {t('Import')}
           </Button>
         </>
       }
     >
       <div className="space-y-3">
         <TextInput
-          label="Absolute file path"
+          label={t('Absolute file path')}
           placeholder="/home/me/models/qwen2.5-1.5b-instruct-q4_k_m.gguf"
           value={path}
           onChange={(e) => setPath(e.target.value)}
@@ -260,15 +263,14 @@ function ImportDialog({ onClose }: { onClose: () => void }) {
           onKeyDown={(e) => e.key === 'Enter' && path.trim() && void submit()}
         />
         <TextInput
-          label="Display name"
-          hint="optional — defaults to general.name"
+          label={t('Display name')}
+          hint={t('optional — defaults to general.name')}
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
         {error && <p className="break-words text-[13px] text-danger">{error}</p>}
         <p className="text-[12.5px] leading-relaxed text-ink-mute">
-          A browser cannot reveal a file's full path, so it must be typed or pasted (Shift + right-click → “Copy
-          as path” on Windows).
+          {t("A browser cannot reveal a file's full path, so it must be typed or pasted (Shift + right-click → “Copy as path” on Windows).")}
         </p>
       </div>
     </Modal>
@@ -278,6 +280,7 @@ function ImportDialog({ onClose }: { onClose: () => void }) {
 function ScanDialog({ onClose }: { onClose: () => void }) {
   const refreshCollections = useEngineStore((s) => s.refreshCollections);
   const configured = useEngineStore((s) => s.health?.config.model_dirs ?? []);
+  const t = useT();
   const [dirs, setDirs] = useState(configured.join('\n'));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -289,8 +292,8 @@ function ScanDialog({ onClose }: { onClose: () => void }) {
       const list = dirs.split('\n').map((d) => d.trim()).filter(Boolean);
       const res = await api.scanModels(list);
       toast.success(
-        'Scan finished',
-        `${res.imported.length} imported · ${res.skipped.length} already registered · ${res.errors.length} errors`,
+        t('Scan finished'),
+        t('{a} imported · {b} already registered · {c} errors', { a: res.imported.length, b: res.skipped.length, c: res.errors.length }),
       );
       if (res.errors.length) setError(res.errors.map((e) => `${e.path}: ${e.error}`).join('\n'));
       await refreshCollections();
@@ -306,28 +309,28 @@ function ScanDialog({ onClose }: { onClose: () => void }) {
     <Modal
       open
       onClose={onClose}
-      title="Scan folders for models"
-      kicker="engine · scan"
-      description="Every .gguf / .safetensors file found (3 levels deep) is registered by path."
+      title={t('Scan folders for models')}
+      kicker={t('engine · scan')}
+      description={t('Every .gguf / .safetensors file found (3 levels deep) is registered by path.')}
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>
-            Close
+            {t('Close')}
           </Button>
           <Button variant="primary" icon={<FolderSearch />} onClick={() => void submit()} loading={busy}>
-            Scan
+            {t('Scan')}
           </Button>
         </>
       }
     >
       <div className="space-y-3">
         <TextArea
-          label="Directories"
-          hint="one absolute path per line"
+          label={t('Directories')}
+          hint={t('one absolute path per line')}
           rows={3}
           value={dirs}
           onChange={(e) => setDirs(e.target.value)}
-          placeholder={configured.length ? undefined : 'Empty = AETHER_MODEL_DIRS (not set on this engine)'}
+          placeholder={configured.length ? undefined : t('Empty = AETHER_MODEL_DIRS (not set on this engine)')}
         />
         {error && <pre className="whitespace-pre-wrap break-words text-[12.5px] text-danger">{error}</pre>}
       </div>
@@ -348,6 +351,7 @@ function ModelDetailModal({
 }) {
   const unit = useAppStore((s) => s.settings.unit);
   const [model, setModel] = useState<ModelDetail | null>(null);
+  const t = useT();
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -369,19 +373,19 @@ function ModelDetailModal({
     <Modal
       open
       onClose={onClose}
-      title={model?.name ?? 'Model'}
-      kicker={model ? `${model.id} · ${model.format}` : 'loading'}
+      title={model?.name ?? t('Model')}
+      kicker={model ? `${model.id} · ${model.format}` : t('loading')}
       description={model?.path}
       size="lg"
       footer={
         <>
           {model && (
             <Button variant="danger" icon={<Trash2 />} onClick={() => onDelete(model)} className="mr-auto">
-              Remove entry
+              {t('Remove entry')}
             </Button>
           )}
           <Button variant="secondary" onClick={onClose}>
-            Close
+            {t('Close')}
           </Button>
         </>
       }
@@ -392,7 +396,7 @@ function ModelDetailModal({
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-2">
             <Badge tone={model.status === 'available' ? 'ok' : 'danger'} dot>
-              {model.status === 'available' ? 'Available' : 'File missing'}
+              {model.status === 'available' ? t('Available') : t('File missing')}
             </Badge>
             <Badge tone="muted" mono>{model.format}</Badge>
             {model.quantization && <Badge tone="muted" mono>{model.quantization}</Badge>}
@@ -402,22 +406,22 @@ function ModelDetailModal({
 
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
             {[
-              ['Architecture', ar?.architecture],
-              ['Parameters', formatParams(model.n_params)],
-              ['Size on disk', formatBytes(model.file_size_bytes, unit)],
-              ['Bits / weight', a?.quantization.bits_per_weight != null ? formatNumber(a.quantization.bits_per_weight, 3) : null],
-              ['Layers', ar?.n_layers],
-              ['Embedding', ar?.embedding_length],
+              [t('Architecture'), ar?.architecture],
+              [t('Parameters'), formatParams(model.n_params)],
+              [t('Size on disk'), formatBytes(model.file_size_bytes, unit)],
+              [t('Bits / weight'), a?.quantization.bits_per_weight != null ? formatNumber(a.quantization.bits_per_weight, 3) : null],
+              [t('Layers'), ar?.n_layers],
+              [t('Embedding'), ar?.embedding_length],
               ['FFN', ar?.feed_forward_length],
-              ['Heads / KV heads', ar ? `${ar.n_heads ?? '—'} / ${Array.isArray(ar.n_kv_heads) ? 'per-layer' : ar.n_kv_heads ?? '—'}` : null],
-              ['Head dim (K/V)', ar ? `${ar.key_length ?? '—'} / ${ar.value_length ?? '—'}` : null],
-              ['Context (train)', formatContext(ar?.context_length)],
-              ['Vocabulary', ar?.vocab_size],
-              ['RoPE base', ar?.rope_freq_base != null ? formatNumber(ar.rope_freq_base, 0) : null],
-              ['Experts', ar?.expert_count != null ? `${ar.expert_used_count ?? '?'} / ${ar.expert_count}` : null],
-              ['Tensors', a?.n_tensors],
-              ['Fingerprint', model.fingerprint],
-              ['Registered', formatDateTime(model.created_at)],
+              [t('Heads / KV heads'), ar ? `${ar.n_heads ?? '—'} / ${Array.isArray(ar.n_kv_heads) ? t('per-layer') : ar.n_kv_heads ?? '—'}` : null],
+              [t('Head dim (K/V)'), ar ? `${ar.key_length ?? '—'} / ${ar.value_length ?? '—'}` : null],
+              [t('Context (train)'), formatContext(ar?.context_length)],
+              [t('Vocabulary'), ar?.vocab_size],
+              [t('RoPE base'), ar?.rope_freq_base != null ? formatNumber(ar.rope_freq_base, 0) : null],
+              [t('Experts'), ar?.expert_count != null ? `${ar.expert_used_count ?? '?'} / ${ar.expert_count}` : null],
+              [t('Tensors'), a?.n_tensors],
+              [t('Fingerprint'), model.fingerprint],
+              [t('Registered'), formatDateTime(model.created_at)],
             ].map(([label, value]) => (
               <div key={String(label)}>
                 <dt className="font-mono text-[12px] uppercase tracking-[0.14em] text-ink-mute">{label}</dt>
@@ -429,7 +433,7 @@ function ModelDetailModal({
           {a && Object.keys(a.quantization.tensor_type_counts).length > 0 && (
             <div>
               <div className="mb-1.5 font-mono text-[12px] uppercase tracking-[0.14em] text-ink-mute">
-                Tensor type mix
+                {t('Tensor type mix')}
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {Object.entries(a.quantization.tensor_type_counts).map(([t, n]) => (
@@ -444,7 +448,7 @@ function ModelDetailModal({
           {a && a.layers.length > 0 && (
             <div>
               <div className="mb-1.5 font-mono text-[12px] uppercase tracking-[0.14em] text-ink-mute">
-                Bytes per layer ({a.layers.length} blocks)
+                {t('Bytes per layer ({n} blocks)', { n: a.layers.length })}
               </div>
               <div className="flex h-16 items-end gap-[2px]">
                 {a.layers.map((l) => (
@@ -467,7 +471,7 @@ function ModelDetailModal({
             </ul>
           )}
           <p className="text-[12.5px] leading-relaxed text-ink-mute">
-            Values marked “—” are not present in the file’s metadata; AETHER does not guess them.
+            {t('Values marked “—” are not present in the file’s metadata; AETHER does not guess them.')}
           </p>
         </div>
       )}

@@ -2,6 +2,7 @@ import type { ActivityEvent } from '@/types';
 import { Badge, type BadgeTone } from '@/components/ui/Badge';
 import { formatRelative } from '@/utils/format';
 import { cn } from '@/utils/cn';
+import { useT } from '@/i18n';
 
 export const statusTone: Record<ActivityEvent['status'], BadgeTone> = {
   Success: 'ok',
@@ -19,6 +20,7 @@ interface ActivityListProps {
 /** Compact chronological log: time, event, status. */
 export function ActivityList({ events, limit, className }: ActivityListProps) {
   const visible = limit ? events.slice(0, limit) : events;
+  const t = useT();
 
   return (
     <ol className={cn('divide-y divide-line/40', className)}>
@@ -37,7 +39,7 @@ export function ActivityList({ events, limit, className }: ActivityListProps) {
             </span>
           </div>
           <Badge tone={statusTone[event.status]} mono>
-            {event.status}
+            {t(event.status)}
           </Badge>
         </li>
       ))}
