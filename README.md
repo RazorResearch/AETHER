@@ -275,6 +275,80 @@ The project is being developed in parallel across two independent workstreams.
 
 ---
 
+## Frontend Interface (v0.1)
+
+The first interface version lives at the repository root and runs entirely without the
+Python backend. It is a complete, navigable desktop-style workspace whose data is
+demonstration data — no engine, no inference, no hardware detection.
+
+**Stack:** React 18, TypeScript (strict), Vite 5, Tailwind CSS 3, Recharts, lucide-react,
+Zustand with `localStorage` persistence, React Router (`HashRouter`, Tauri-ready).
+
+### Requirements and commands
+
+Node.js 18+ and npm. No environment variables, no backend, no account.
+
+```bash
+npm install      # install frontend dependencies
+npm run dev      # dev server on http://localhost:5173
+npm run typecheck
+npm run build    # type → production bundle in dist/
+npm run preview  # serve the production build
+```
+
+### Implemented surfaces
+
+- **Overview** — simulated VRAM/RAM/GPU/CPU indicators, 7/14/30-day demo throughput
+  series, workspace counters, chronological activity feed.
+- **Models** — local library table with search and format filters, file-assisted import
+  (name/size only, never read), manual registration, detail sheet, confirmed removal.
+- **Hardware** — GPU, RAM, CPU (per-core load) and storage panels fed by the simulation
+  layer, plus a telemetry-bridge test that fails honestly.
+- **Optimization** — model selection, 7 toggleable strategies, 3 objective profiles,
+  advanced parameters, VRAM/RAM/context/speed constraints, live summary. *Start
+  optimization* reports the missing engine instead of fabricating a result.
+- **Experiments** — creation with validation, strategy selection, status filters, detail
+  view with status changes, deletion; records persist locally.
+- **Benchmarks** — baseline vs optimized comparison (relative index + radar), documented
+  scientific metrics, local JSON report export carrying its own disclaimer.
+- **Activity** — filterable event ledger with search and confirmed purge.
+- **Settings** — dark/light themes, GB/GiB units, startup preferences, placeholder
+  directories, demo-data restore.
+- **About RazorResearch** — scope, roadmap and license posture.
+
+### Frontend architecture
+
+```
+src/
+├── components/  layout · navigation · charts · cards · tables · ui
+├── pages/       Overview, Models, Hardware, Optimization, Experiments,
+│                Benchmarks, Activity, Settings, About
+├── store/       Zustand workspace store (persisted) + toasts
+├── hooks/       telemetry, clock, chart theme, loading
+├── types/       domain contract shared with the future engine
+├── data/        demonstration datasets
+├── utils/       formatting, benchmark maths, system bridge contract
+└── assets/
+```
+
+`src/utils/systemBridge.ts` defines the `SystemBridge` contract (`isAvailable`,
+`readTelemetry`) that a Tauri command or the Python sidecar must implement; it is the
+only replacement point for real telemetry.
+
+### Demonstration data policy
+
+Every metric on screen is generated locally and labelled (`Demo data`, `Simulated`,
+`Demo series`). Benchmarks include deliberate regressions (perplexity, accuracy) so the
+interface never implies a free win. Nothing is sent to a third-party service.
+
+### Known limitations
+
+No optimization engine, no CUDA/C++ kernels, no model inference, no filesystem or GPU
+access, English-only interface. Workspace state lives in `localStorage` under
+`aether.workspace.v1`.
+
+---
+
 ## Roadmap
 
 ### Phase I — Foundations

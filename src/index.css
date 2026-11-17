@@ -1,0 +1,179 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ------------------------------------------------------------------------ */
+/* AETHER design tokens                                                      */
+/* Two themes share a single semantic token set so every surface, border and */
+/* chart adapts without duplicated component styles.                         */
+/* ------------------------------------------------------------------------ */
+@layer base {
+  :root,
+  [data-theme='dark'] {
+    color-scheme: dark;
+    --c-base: 6 9 15;
+    --c-raised: 9 13 21;
+    --c-surface: 13 18 28;
+    --c-surface2: 18 24 36;
+    --c-line: 34 45 63;
+    --c-ink: 234 240 248;
+    --c-ink-dim: 152 166 186;
+    --c-ink-mute: 100 115 136;
+    --c-accent: 34 211 238;
+    --c-glacier: 125 211 252;
+    --c-ok: 45 212 160;
+    --c-warn: 245 190 80;
+    --c-danger: 248 113 113;
+    --chart-grid: rgba(148, 163, 184, 0.13);
+    --chart-axis: rgba(148, 163, 184, 0.45);
+    --glow: rgba(34, 211, 238, 0.16);
+  }
+
+  [data-theme='light'] {
+    color-scheme: light;
+    --c-base: 243 246 250;
+    --c-raised: 250 252 255;
+    --c-surface: 255 255 255;
+    --c-surface2: 239 244 250;
+    --c-line: 210 220 233;
+    --c-ink: 13 22 35;
+    --c-ink-dim: 73 88 108;
+    --c-ink-mute: 108 123 142;
+    --c-accent: 8 145 178;
+    --c-glacier: 2 132 199;
+    --c-ok: 5 150 105;
+    --c-warn: 176 98 8;
+    --c-danger: 220 38 38;
+    --chart-grid: rgba(100, 116, 139, 0.16);
+    --chart-axis: rgba(71, 85, 105, 0.6);
+    --glow: rgba(8, 145, 178, 0.12);
+  }
+
+  * {
+    border-color: rgb(var(--c-line) / 0.8);
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-base font-sans text-ink antialiased;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'ss01';
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: rgb(var(--c-accent) / 0.26);
+    color: rgb(var(--c-ink));
+  }
+
+  :focus-visible {
+    outline: none;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgb(var(--c-line) / 0.9);
+    border: 3px solid transparent;
+    background-clip: content-box;
+    border-radius: 999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgb(var(--c-ink-mute) / 0.7);
+    background-clip: content-box;
+  }
+
+  input[type='range'] {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 04px;
+    border-radius: 999px;
+    background: rgb(var(--c-line));
+    cursor: pointer;
+  }
+
+  input[type='range']::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 13px;
+    width: 13px;
+    border-radius: 50%;
+    background: rgb(var(--c-accent));
+    border: 2px solid rgb(var(--c-base));
+    box-shadow: 0 0 0 1px rgb(var(--c-accent) / 0.5), 0 0 12px rgb(var(--c-accent) / 0.45);
+  }
+
+  input[type='range']::-moz-range-thumb {
+    height: 13px;
+    width: 13px;
+    border: 2px solid rgb(var(--c-base));
+    border-radius: 50%;
+    background: rgb(var(--c-accent));
+  }
+}
+
+@layer components {
+  /* Faint engineering grid used behind the workspace shell. */
+  .app-grid {
+    background-image: linear-gradient(to right, rgb(var(--c-line) / 0.22) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(var(--c-line) / 0.22) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: radial-gradient(ellipse 100% 70% at 50% 0%, #000 20%, transparent 78%);
+    -webkit-mask-image: radial-gradient(ellipse 100% 70% at 50% 0%, #000 20%, transparent 78%);
+  }
+
+  .mono-label {
+    @apply font-mono text-2xs uppercase tracking-[0.16em] text-ink-mute;
+  }
+
+  .hairline {
+    @apply h-px w-full bg-line/70;
+  }
+
+  .focus-ring {
+    @apply outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-base;
+  }
+
+  /* Numeric readouts keep a fixed width so live values do not jitter. */
+  .readout {
+    @apply font-mono tabular-nums tracking-tight;
+  }
+
+  .panel-sheen {
+    position: relative;
+  }
+
+  .panel-sheen::after {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgb(var(--c-ink) / 0.09) 22%,
+      rgb(var(--c-accent) / 0.28) 50%,
+      rgb(var(--c-ink) / 0.09) 78%,
+      transparent
+    );
+    pointer-events: none;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
