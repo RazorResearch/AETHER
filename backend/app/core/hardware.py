@@ -47,6 +47,7 @@ class CPUInfo(BaseModel):
     logical_cores: int | None = None
     frequency_mhz: float | None = None
     utilization_percent: float | None = None
+    per_core_utilization_percent: list[float] = []
 
 
 class MemoryInfo(BaseModel):
@@ -257,8 +258,10 @@ def collect_hardware(disk_paths: list[Path] | None = None, include_torch: bool =
         physical_cores=psutil.cpu_count(logical=False),
         logical_cores=psutil.cpu_count(logical=True),
         frequency_mhz=freq,
-        utilization_percent=psutil.cpu_percent(interval=cpu_sample_s),
     )
+    per_core = psutil.cpu_percent(interval=cpu_sample_s, percpu=True)
+    cpu.per_core_utilization_percent = [float(x) for x in per_core]
+    cpu.utilization_percent = sum(per_core) / len(per_core) if per_core else None
     vm, sm = psutil.virtual_memory(), psutil.swap_memory()
     memory = MemoryInfo(total_bytes=vm.total, available_bytes=vm.available, used_bytes=vm.used,
                         percent=vm.percent, swap_total_bytes=sm.total, swap_used_bytes=sm.used)
