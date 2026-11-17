@@ -2,11 +2,24 @@
 
 ### Adaptive AI Optimization & Research Engine
 
-\<p align="center">   \<strong>An open-source research platform for making local AI models smarter, faster, and more memory-efficient.\</strong> \</p>
 
-\<p align="center">   \<a href="[https://github.com/RazorResearch](https://github.com/RazorResearch)">     \<img src="[https://img.shields.io/badge/Research-RazorResearch-111827?style=for-the-badge](https://img.shields.io/badge/Research-RazorResearch-111827?style=for-the-badge)" />   \</a>   \<img src="[https://img.shields.io/badge/Status-Research%20%26%20Development-0891B2?style=for-the-badge](https://img.shields.io/badge/Status-Research%20%26%20Development-0891B2?style=for-the-badge)" />   \<img src="[https://img.shields.io/badge/License-Apache%202.0-blue?style=for-the-badge](https://img.shields.io/badge/License-Apache%202.0-blue?style=for-the-badge)" />   \<img src="[https://img.shields.io/badge/AI-Local%20Inference-0F766E?style=for-the-badge](https://img.shields.io/badge/AI-Local%20Inference-0F766E?style=for-the-badge)" /> \</p>
+<p align="center">
+  <strong>An open-source research platform for making local AI models smarter, faster, and more memory-efficient.</strong>
+</p>
 
-\<p align="center">   \<em>Research. Optimize. Innovate.\</em> \</p>
+<p align="center">
+  <a href="https://github.com/RazorResearch">
+    <img src="https://img.shields.io/badge/Research-RazorResearch-111827?style=for-the-badge" alt="RazorResearch" />
+  </a>
+  <img src="https://img.shields.io/badge/Status-Research%20%26%20Development-0891B2?style=for-the-badge" alt="Research and Development" />
+  <img src="https://img.shields.io/badge/License-Apache%202.0-blue?style=for-the-badge" alt="Apache 2.0" />
+  <img src="https://img.shields.io/badge/AI-Local%20Inference-0F766E?style=for-the-badge" alt="Local Inference" />
+</p>
+
+<p align="center">
+  <em>Research. Optimize. Innovate.</em>
+</p>
+
 
 ---
 
