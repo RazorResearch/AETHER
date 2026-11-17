@@ -502,6 +502,12 @@ Our objective is to contribute to a future where advanced AI capabilities are no
 
 We believe that improving the efficiency of existing models is an important part of making artificial intelligence more accessible.
 
-\<p align="center">   \<strong>RAZORRESEARCH\</strong>   \<br/>   Independent AI Research Laboratory   \<br/>   \<a href="[https://github.com/RazorResearch](https://github.com/RazorResearch)">GitHub Organization\</a> \</p>
+<p align="center">
+  <strong>RAZORRESEARCH</strong><br/>
+  Independent AI Research Laboratory<br/>
+  <a href="https://github.com/RazorResearch">GitHub Organization</a>
+</p>
 
-\<p align="center">   \<em>Research. Optimize. Innovate.\</em> \</p>
+<p align="center">
+  <em>Research. Optimize. Innovate.</em>
+</p>
