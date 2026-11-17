@@ -41,7 +41,7 @@ def make_llama_gguf(path: Path, n_layers: int = 2, embd: int = 256, ff: int = 51
             tensor(p + "attn_q.weight", (embd, embd)),
             tensor(p + "attn_k.weight", (embd, kv_heads * head_dim)),
             tensor(p + "attn_v.weight", (embd, kv_heads * head_dim)),
-            # make layer 0 output projection heavy-tailed => more sensitive
+            # larger scale on layer 0 (changes absolute, not relative, error)
             tensor(p + "attn_output.weight", (embd, embd), scale=0.02 if i else 0.05),
             tensor(p + "ffn_norm.weight", (embd,)),
             tensor(p + "ffn_gate.weight", (embd, ff)),
