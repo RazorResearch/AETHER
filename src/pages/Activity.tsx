@@ -58,7 +58,6 @@ export function ActivityPage() {
       <PageHeader
         title="Activity"
         subtitle="Chronological log of workspace events. Everything stays on this machine."
-        code="system / activity"
         meta={<ProvenanceBadge />}
         actions={
           <Button
@@ -74,11 +73,10 @@ export function ActivityPage() {
 
       <Card>
         <CardHeader
-          kicker="event ledger"
           title={
             <span className="flex items-center gap-2">
               Events
-              <span className="readout text-[11px] font-normal text-ink-mute">
+              <span className="readout text-[13px] font-normal text-ink-mute">
                 {filtered.length}/{activity.length}
               </span>
             </span>
@@ -148,10 +146,10 @@ export function ActivityPage() {
         )}
 
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line/40 px-5 py-2.5">
-          <p className="text-[10.5px] text-ink-mute">
+          <p className="text-[13px] text-ink-mute">
             Events are kept in localStorage and capped at 200 entries.
           </p>
-          <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-ink-mute/60">
+          <span className="font-mono text-[12px] uppercase tracking-[0.12em] text-ink-mute/60">
             no telemetry uploaded
           </span>
         </div>
@@ -175,7 +173,7 @@ export function ActivityPage() {
           </>
         }
       >
-        <p className="text-[11.5px] leading-relaxed text-ink-dim">
+        <p className="text-[13.5px] leading-relaxed text-ink-dim">
           {activity.length} events will be removed from{' '}
           <span className="font-mono text-ink-mute">aether.workspace.v1</span>. This cannot be undone.
         </p>

@@ -1,12 +1,10 @@
-import { useId } from 'react';
-
 interface SparklineProps {
   values: number[];
   width?: number;
   height?: number;
   className?: string;
   tone?: 'accent' | 'glacier' | 'ok' | 'warn' | 'danger';
-  /** Draws a dotted baseline at the series minimum. */
+  /** Draws a hairline baseline at the series minimum. */
   showBaseline?: boolean;
 }
 
@@ -18,7 +16,7 @@ const colors = {
   danger: 'rgb(var(--c-danger))',
 };
 
-/** Micro trend line, no chart library involved. */
+/** Micro trend line. Flat fill, hairline stroke, no gradient. */
 export function Sparkline({
   values,
   width = 120,
@@ -27,7 +25,6 @@ export function Sparkline({
   tone = 'accent',
   showBaseline = false,
 }: SparklineProps) {
-  const gradientId = useId();
   if (values.length < 2) return null;
 
   const max = Math.max(...values);
@@ -51,30 +48,23 @@ export function Sparkline({
       className={className}
       aria-hidden="true"
     >
-      <defs>
-        <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={colors[tone]} stopOpacity="0.22" />
-          <stop offset="100%" stopColor={colors[tone]} stopOpacity="0" />
-        </linearGradient>
-      </defs>
       {showBaseline && (
         <line
           x1="0"
-          y1={height - 1}
+          y1={height - 0.5}
           x2={width}
-          y2={height - 1}
+          y2={height - 0.5}
           stroke="rgb(var(--c-line))"
           strokeDasharray="2 3"
         />
       )}
-      <polygon points={area} fill={`url(#${gradientId})`} />
+      <polygon points={area} fill={colors[tone]} fillOpacity="0.06" />
       <polyline
         points={line}
         fill="none"
         stroke={colors[tone]}
-        strokeWidth="1.3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        strokeWidth="1.1"
+        strokeLinejoin="miter"
         vectorEffect="non-scaling-stroke"
       />
     </svg>

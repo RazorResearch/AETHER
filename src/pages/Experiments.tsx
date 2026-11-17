@@ -60,7 +60,6 @@ export function ExperimentsPage() {
       <PageHeader
         title="Experiments"
         subtitle="Plan, track and review optimization experiments. Stored in this browser only."
-        code="workspace / experiments"
         meta={<ProvenanceBadge />}
         actions={
           <Button
@@ -76,11 +75,10 @@ export function ExperimentsPage() {
 
       <Card>
         <CardHeader
-          kicker="experiment registry"
           title={
             <span className="flex items-center gap-2">
               Experiments
-              <span className="readout text-[11px] font-normal text-ink-mute">
+              <span className="readout text-[13px] font-normal text-ink-mute">
                 {filtered.length}/{experiments.length}
               </span>
             </span>
@@ -103,7 +101,7 @@ export function ExperimentsPage() {
               })),
             ]}
           />
-          <span className="ml-auto hidden items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.12em] text-ink-mute/70 sm:flex">
+          <span className="ml-auto hidden items-center gap-1.5 font-mono text-[12px] uppercase tracking-[0.12em] text-ink-mute/70 sm:flex">
             <Info className="h-3 w-3" />
             {filter === 'All' ? 'all statuses' : filter.toLowerCase()}
           </span>
@@ -127,7 +125,7 @@ export function ExperimentsPage() {
               }
             />
             {models.length === 0 && (
-              <p className="mt-3 text-center text-[10.5px] text-ink-mute">
+              <p className="mt-3 text-center text-[13px] text-ink-mute">
                 A model must be registered in the library first.
               </p>
             )}
@@ -151,11 +149,11 @@ export function ExperimentsPage() {
         )}
 
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line/40 px-5 py-2.5">
-          <p className="text-[10.5px] text-ink-mute">
+          <p className="text-[13px] text-ink-mute">
             Records are persisted with <span className="font-mono text-ink-mute/90">localStorage</span>{' '}
             — no account, no remote sync.
           </p>
-          <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-ink-mute/60">
+          <span className="font-mono text-[12px] uppercase tracking-[0.12em] text-ink-mute/60">
             {experiments.length} records
           </span>
         </div>
@@ -209,16 +207,16 @@ export function ExperimentsPage() {
               <Badge tone="muted">
                 {optimizationTargets.find((target) => target.id === activeDetail.target)?.label}
               </Badge>
-              <span className="font-mono text-[9.5px] text-ink-mute">
+              <span className="font-mono text-[12px] text-ink-mute">
                 updated {formatRelative(activeDetail.updatedAt)}
               </span>
             </div>
 
             <div>
-              <div className="font-mono text-[9px] uppercase tracking-[0.14em] text-ink-mute">
+              <div className="font-mono text-[12px] uppercase tracking-[0.14em] text-ink-mute">
                 Hypothesis / description
               </div>
-              <p className="mt-1.5 text-[12px] leading-relaxed text-ink-dim">
+              <p className="mt-1.5 text-[13.5px] leading-relaxed text-ink-dim">
                 {activeDetail.description || 'No description provided.'}
               </p>
             </div>
@@ -236,16 +234,16 @@ export function ExperimentsPage() {
                 ['Record id', activeDetail.id],
               ].map(([label, value]) => (
                 <div key={label}>
-                  <dt className="font-mono text-[9px] uppercase tracking-[0.14em] text-ink-mute">
+                  <dt className="font-mono text-[12px] uppercase tracking-[0.14em] text-ink-mute">
                     {label}
                   </dt>
-                  <dd className="mt-1 break-words text-[11.5px] text-ink-dim">{value}</dd>
+                  <dd className="mt-1 break-words text-[13.5px] text-ink-dim">{value}</dd>
                 </div>
               ))}
             </dl>
 
             <div>
-              <div className="mb-2 font-mono text-[9px] uppercase tracking-[0.14em] text-ink-mute">
+              <div className="mb-2 font-mono text-[12px] uppercase tracking-[0.14em] text-ink-mute">
                 Strategies under test
               </div>
               <ul className="divide-y divide-line/40 overflow-hidden rounded-md border border-line/60">
@@ -253,12 +251,12 @@ export function ExperimentsPage() {
                   const strategy = optimizationStrategies.find((item) => item.id === id);
                   return (
                     <li key={id} className="flex items-start gap-2.5 bg-raised/30 px-3 py-2">
-                      <span className="mt-0.5 rounded border border-line/70 px-1 py-[1px] font-mono text-[8.5px] uppercase tracking-[0.08em] text-ink-mute">
+                      <span className="mt-0.5 rounded border border-line/70 px-1 py-[1px] font-mono text-[11.5px] uppercase tracking-[0.08em] text-ink-mute">
                         {strategy?.code ?? id}
                       </span>
                       <div className="min-w-0">
-                        <div className="text-[11.5px] text-ink-dim">{strategy?.label ?? id}</div>
-                        <div className="text-[10px] leading-relaxed text-ink-mute">
+                        <div className="text-[13.5px] text-ink-dim">{strategy?.label ?? id}</div>
+                        <div className="text-[12.5px] leading-relaxed text-ink-mute">
                           {strategy?.description}
                         </div>
                       </div>
@@ -266,7 +264,7 @@ export function ExperimentsPage() {
                   );
                 })}
                 {activeDetail.strategyIds.length === 0 && (
-                  <li className="px-3 py-2 text-[11px] text-ink-mute">
+                  <li className="px-3 py-2 text-[13px] text-ink-mute">
                     No strategy attached to this experiment.
                   </li>
                 )}
@@ -287,7 +285,7 @@ export function ExperimentsPage() {
                 </option>
               ))}
             </SelectInput>
-            <p className="text-[10px] leading-relaxed text-ink-mute">
+            <p className="text-[12.5px] leading-relaxed text-ink-mute">
               Changing the status records a local event. No run is scheduled, started or completed.
             </p>
           </div>
@@ -312,7 +310,7 @@ export function ExperimentsPage() {
           </>
         }
       >
-        <div className="rounded-md border border-danger/25 bg-danger/[0.05] px-3 py-2.5 text-[11.5px] text-ink-dim">
+        <div className="rounded-md border border-danger/25 bg-danger/[0.05] px-3 py-2.5 text-[13.5px] text-ink-dim">
           <span className="text-ink">{deleteTarget?.name}</span> and its configuration will be
           discarded.
         </div>
@@ -394,7 +392,7 @@ function CreateExperimentDialog({ models, onClose, onSubmit }: CreateExperimentD
           }}
           autoFocus
         />
-        {errors.name && <p className="-mt-1.5 text-[10.5px] text-danger">{errors.name}</p>}
+        {errors.name && <p className="-mt-1.5 text-[13px] text-danger">{errors.name}</p>}
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <SelectInput
@@ -423,7 +421,7 @@ function CreateExperimentDialog({ models, onClose, onSubmit }: CreateExperimentD
             ))}
           </SelectInput>
         </div>
-        {errors.model && <p className="-mt-1.5 text-[10.5px] text-danger">{errors.model}</p>}
+        {errors.model && <p className="-mt-1.5 text-[13px] text-danger">{errors.model}</p>}
 
         <TextArea
           label="Description / hypothesis"
@@ -435,8 +433,8 @@ function CreateExperimentDialog({ models, onClose, onSubmit }: CreateExperimentD
 
         <div>
           <div className="mb-1.5 flex items-baseline justify-between">
-            <span className="text-[11.5px] font-medium text-ink-dim">Strategies to test</span>
-            <span className="font-mono text-[10px] text-ink-mute">{strategyIds.length} selected</span>
+            <span className="text-[13.5px] font-medium text-ink-dim">Strategies to test</span>
+            <span className="font-mono text-[12.5px] text-ink-mute">{strategyIds.length} selected</span>
           </div>
           <div className="flex flex-wrap gap-1.5">
             {optimizationStrategies.map((strategy) => {
@@ -450,13 +448,13 @@ function CreateExperimentDialog({ models, onClose, onSubmit }: CreateExperimentD
                     setErrors((current) => ({ ...current, strategies: undefined }));
                   }}
                   className={cn(
-                    'focus-ring inline-flex items-center gap-1.5 rounded border px-2 py-1 text-[11px] transition-colors',
+                    'focus-ring inline-flex items-center gap-1.5 rounded border px-2 py-1 text-[13px] transition-colors',
                     active
                       ? 'border-accent/45 bg-accent/[0.07] text-accent'
                       : 'border-line bg-raised/30 text-ink-mute hover:border-ink-mute/40 hover:text-ink-dim',
                   )}
                 >
-                  <span className="font-mono text-[8.5px] uppercase tracking-[0.06em]">
+                  <span className="font-mono text-[11.5px] uppercase tracking-[0.06em]">
                     {strategy.code}
                   </span>
                   {strategy.label}
@@ -466,7 +464,7 @@ function CreateExperimentDialog({ models, onClose, onSubmit }: CreateExperimentD
             })}
           </div>
           {errors.strategies && (
-            <p className="mt-1.5 text-[10.5px] text-danger">{errors.strategies}</p>
+            <p className="mt-1.5 text-[13px] text-danger">{errors.strategies}</p>
           )}
         </div>
 
@@ -482,7 +480,7 @@ function CreateExperimentDialog({ models, onClose, onSubmit }: CreateExperimentD
             </option>
           ))}
         </SelectInput>
-        <p className="text-[10px] leading-relaxed text-ink-mute">
+        <p className="text-[12.5px] leading-relaxed text-ink-mute">
           Running and Completed are labels only: creating an experiment never launches a job.
         </p>
       </div>

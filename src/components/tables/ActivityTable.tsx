@@ -14,7 +14,7 @@ export function ActivityTable({ events }: { events: ActivityEvent[] }) {
               <th
                 key={heading}
                 scope="col"
-                className="px-3 py-2 font-mono text-[9px] font-medium uppercase tracking-[0.14em] text-ink-mute first:pl-5 last:pr-5 last:text-right"
+                className="px-3 py-2 font-mono text-[11.5px] font-normal uppercase tracking-[0.08em] text-ink-mute/70 first:pl-4 last:pr-4 last:text-right"
               >
                 {heading}
               </th>
@@ -25,30 +25,26 @@ export function ActivityTable({ events }: { events: ActivityEvent[] }) {
           {events.map((event) => (
             <tr
               key={event.id}
-              className="border-b border-line/30 transition-colors last:border-0 hover:bg-surface2/30"
+              className="border-b border-line/30 transition-colors last:border-0 hover:bg-surface2/25"
             >
-              <td className="whitespace-nowrap px-3 py-2.5 pl-5">
-                <span className="font-mono text-[10.5px] text-ink-mute">{formatDate(event.timestamp)}</span>
+              <td className="whitespace-nowrap py-2 pl-4 pr-3">
+                <span className="font-mono text-[12.5px] text-ink-mute">{formatDate(event.timestamp)}</span>
               </td>
-              <td className="whitespace-nowrap px-3 py-2.5">
-                <span className="font-mono text-[10.5px] tabular-nums text-ink-dim">
+              <td className="whitespace-nowrap px-3 py-2">
+                <span className="readout text-[12.5px] text-ink-dim">
                   {formatTime(event.timestamp)}
                 </span>
               </td>
-              <td className="px-3 py-2.5">
-                <span className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-ink-mute">
-                  {event.category}
-                </span>
+              <td className="px-3 py-2">
+                <span className="font-mono text-[12px] text-ink-mute/80">{event.category}</span>
               </td>
-              <td className="whitespace-nowrap px-3 py-2.5">
-                <span className="rounded border border-line/70 px-1.5 py-[2px] font-mono text-[9px] text-ink-mute">
-                  {event.type}
-                </span>
+              <td className="whitespace-nowrap px-3 py-2">
+                <span className="font-mono text-[12px] text-ink-mute">{event.type}</span>
               </td>
-              <td className="max-w-[440px] px-3 py-2.5">
-                <span className="text-[11.5px] leading-relaxed text-ink-dim">{event.description}</span>
+              <td className="max-w-[440px] px-3 py-2">
+                <span className="text-[13px] leading-snug text-ink-dim">{event.description}</span>
               </td>
-              <td className="px-3 py-2.5 pr-5 text-right">
+              <td className="py-2 pl-3 pr-4 text-right">
                 <Badge tone={statusTone[event.status]} dot>
                   {event.status}
                 </Badge>

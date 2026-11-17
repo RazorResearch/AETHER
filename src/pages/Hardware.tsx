@@ -58,7 +58,6 @@ export function HardwarePage() {
       <PageHeader
         title="Hardware"
         subtitle="Device envelope for local inference. Values are simulated until a native bridge is attached."
-        code="workspace / hardware"
         meta={<ProvenanceBadge kind="simulated" />}
         actions={
           <>
@@ -83,9 +82,9 @@ export function HardwarePage() {
         }
       />
 
-      <div className="mb-3 flex items-start gap-2.5 rounded-md border border-warn/25 bg-warn/[0.04] px-3.5 py-2.5">
-        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warn" />
-        <div className="text-[11.5px] leading-relaxed text-ink-dim">
+      <div className="mb-3 flex items-start gap-2.5 border-l-2 border-warn/60 pl-3">
+        <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-warn/80" />
+        <div className="text-[13.5px] leading-relaxed text-ink-dim">
           <span className="font-medium text-warn">Simulated telemetry.</span> A browser cannot read GPU
           VRAM, temperatures or per-core load. AETHER generates these values locally and never claims
           they were detected. Device names are placeholders.
@@ -96,7 +95,6 @@ export function HardwarePage() {
         {/* ------------------------------- GPU ------------------------------- */}
         <Card className="xl:col-span-7">
           <CardHeader
-            kicker="graphics device"
             title={snapshot.gpuName}
             hint="Placeholder descriptor — no device query is performed."
             action={<Badge tone="warn" dot>simulated</Badge>}
@@ -113,13 +111,13 @@ export function HardwarePage() {
                   ariaLabel="GPU VRAM usage"
                 />
                 <div>
-                  <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-ink-mute">
+                  <div className="font-mono text-[12px] uppercase tracking-[0.16em] text-ink-mute">
                     vram pressure
                   </div>
-                  <div className="readout mt-1 text-[12.5px] text-ink">
+                  <div className="readout mt-1 text-[14px] text-ink">
                     {formatNumber(snapshot.vramUsedGb, 1)} / {formatGigabytes(snapshot.vramTotalGb, unit)}
                   </div>
-                  <div className="mt-1 text-[10.5px] text-ink-mute">
+                  <div className="mt-1 text-[13px] text-ink-mute">
                     {formatGigabytes(snapshot.vramTotalGb - snapshot.vramUsedGb, unit)} free
                   </div>
                   <div className="mt-3">
@@ -128,7 +126,7 @@ export function HardwarePage() {
                 </div>
               </div>
 
-              <div className="grid flex-1 grid-cols-2 gap-2 sm:grid-cols-2">
+              <div className="grid flex-1 grid-cols-2 gap-x-5 gap-y-3.5">
                 <StatTile
                   label="Utilization"
                   value={formatPercent(snapshot.gpuUtilization)}
@@ -139,7 +137,7 @@ export function HardwarePage() {
                   value={
                     <span className="flex items-baseline gap-1">
                       {snapshot.gpuTemperatureC}
-                      <span className="text-[10px] text-ink-mute">°C</span>
+                      <span className="text-[12.5px] text-ink-mute">°C</span>
                     </span>
                   }
                   detail="Die sensor"
@@ -147,24 +145,24 @@ export function HardwarePage() {
                 />
                 <StatTile
                   label="Memory type"
-                  value={<span className="text-[12px]">GDDR class</span>}
+                  value={<span className="text-[13.5px]">GDDR class</span>}
                   detail="Placeholder"
                 />
                 <StatTile
                   label="Sampling"
-                  value={<span className="text-[12px]">{mode === 'live' ? '4.2 s' : 'paused'}</span>}
+                  value={<span className="text-[13.5px]">{mode === 'live' ? '4.2 s' : 'paused'}</span>}
                   detail={`last ${formatTime(snapshot.capturedAt)}`}
                 />
               </div>
             </div>
 
             <div className="mt-4 border-t border-line/40 pt-3">
-              <div className="mb-1.5 flex items-center justify-between font-mono text-[9.5px] uppercase tracking-[0.12em] text-ink-mute">
+              <div className="mb-1.5 flex items-center justify-between font-mono text-[12px] uppercase tracking-[0.12em] text-ink-mute">
                 <span>vram allocation</span>
                 <span>{formatPercent(vramPct, 1)}</span>
               </div>
               <ProgressBar value={vramPct} height="sm" tone={vramPct > 85 ? 'danger' : 'accent'} />
-              <div className="mt-2 flex justify-between font-mono text-[9px] uppercase tracking-[0.1em] text-ink-mute/60">
+              <div className="mt-2 flex justify-between font-mono text-[12px] uppercase tracking-[0.1em] text-ink-mute/60">
                 <span>0</span>
                 <span>{formatGigabytes(snapshot.vramTotalGb, unit)}</span>
               </div>
@@ -176,7 +174,6 @@ export function HardwarePage() {
         <div className="space-y-3 xl:col-span-5">
           <Card>
             <CardHeader
-              kicker="system memory"
               title="Host RAM"
               action={<Badge tone="muted" mono>simulated</Badge>}
             />
@@ -185,9 +182,9 @@ export function HardwarePage() {
                 <div>
                   <div className="readout text-[22px] font-medium leading-none text-ink">
                     {formatNumber(snapshot.ramUsedGb, 1)}
-                    <span className="ml-1 text-[10.5px] text-ink-mute">{unit} used</span>
+                    <span className="ml-1 text-[13px] text-ink-mute">{unit} used</span>
                   </div>
-                  <div className="mt-1.5 text-[11px] text-ink-mute">
+                  <div className="mt-1.5 text-[13px] text-ink-mute">
                     {formatGigabytes(snapshot.ramTotalGb - snapshot.ramUsedGb, unit)} available of{' '}
                     {formatGigabytes(snapshot.ramTotalGb, unit)}
                   </div>
@@ -195,7 +192,7 @@ export function HardwarePage() {
                 <MemoryStick className="h-4 w-4 text-ink-mute/60" />
               </div>
               <ProgressBar value={ramPct} height="sm" tone="glacier" className="mt-3" />
-              <div className="mt-2 flex justify-between font-mono text-[9.5px] text-ink-mute/70">
+              <div className="mt-2 flex justify-between font-mono text-[12px] text-ink-mute/70">
                 <span>{formatPercent(ramPct, 1)} engaged</span>
                 <span>page cache excluded</span>
               </div>
@@ -204,7 +201,6 @@ export function HardwarePage() {
 
           <Card>
             <CardHeader
-              kicker="storage"
               title="Workspace volume"
               action={<HardDrive className="h-3.5 w-3.5 text-ink-mute/60" />}
             />
@@ -212,7 +208,7 @@ export function HardwarePage() {
               <div className="flex items-end justify-between">
                 <div className="readout text-[22px] font-medium leading-none text-ink">
                   {formatNumber(diskFree, 0)}
-                  <span className="ml-1 text-[10.5px] text-ink-mute">{unit} free</span>
+                  <span className="ml-1 text-[13px] text-ink-mute">{unit} free</span>
                 </div>
                 <Badge tone="muted" mono>
                   sim volume
@@ -224,7 +220,7 @@ export function HardwarePage() {
                 tone={diskPct > 90 ? 'danger' : 'ok'}
                 className="mt-3"
               />
-              <div className="mt-2 flex justify-between font-mono text-[9.5px] text-ink-mute/70">
+              <div className="mt-2 flex justify-between font-mono text-[12px] text-ink-mute/70">
                 <span>{formatGigabytes(snapshot.diskUsedGb, unit)} used</span>
                 <span>{formatGigabytes(snapshot.diskTotalGb, unit)} total</span>
               </div>
@@ -235,7 +231,6 @@ export function HardwarePage() {
         {/* ------------------------------- CPU ------------------------------- */}
         <Card className="xl:col-span-7">
           <CardHeader
-            kicker="processor"
             title={snapshot.cpuName}
             hint="Core topology is a placeholder: 16 logical cores."
             action={<Badge tone="warn" dot>simulated</Badge>}
@@ -245,11 +240,11 @@ export function HardwarePage() {
               <div>
                 <div className="readout text-[22px] font-medium leading-none text-ink">
                   {formatPercent(snapshot.cpuUtilization)}
-                  <span className="ml-2 text-[10.5px] font-normal text-ink-mute">
+                  <span className="ml-2 text-[13px] font-normal text-ink-mute">
                     aggregate load
                   </span>
                 </div>
-                <div className="mt-1.5 flex items-center gap-1.5 text-[10.5px] text-ink-mute">
+                <div className="mt-1.5 flex items-center gap-1.5 text-[13px] text-ink-mute">
                   <Cpu className="h-3 w-3" />
                   {snapshot.cpuCores} logical cores ·{' '}
                   <InfoHint
@@ -258,7 +253,7 @@ export function HardwarePage() {
                   />
                 </div>
               </div>
-              <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-ink-mute/60">
+              <span className="font-mono text-[12px] uppercase tracking-[0.14em] text-ink-mute/60">
                 sample {formatTime(snapshot.capturedAt)}
               </span>
             </div>
@@ -275,7 +270,7 @@ export function HardwarePage() {
                       style={{ height: `${Math.max(6, load)}%` }}
                     />
                   </div>
-                  <span className="mt-1 block text-center font-mono text-[8px] text-ink-mute/60">
+                  <span className="mt-1 block text-center font-mono text-[11.5px] text-ink-mute/60">
                     {String(index).padStart(2, '0')}
                   </span>
                 </div>
@@ -283,7 +278,7 @@ export function HardwarePage() {
             </div>
 
             <div className="mt-3 flex items-center justify-between border-t border-line/40 pt-2.5">
-              <div className="flex items-center gap-3 font-mono text-[9px] uppercase tracking-[0.1em] text-ink-mute/70">
+              <div className="flex items-center gap-3 font-mono text-[12px] uppercase tracking-[0.1em] text-ink-mute/70">
                 <span className="flex items-center gap-1">
                   <span className="h-1.5 w-1.5 rounded-[1px] bg-accent/80" /> active
                 </span>
@@ -291,7 +286,7 @@ export function HardwarePage() {
                   <span className="h-1.5 w-1.5 rounded-[1px] bg-surface2" /> idle
                 </span>
               </div>
-              <span className="font-mono text-[9px] uppercase tracking-[0.1em] text-ink-mute/60">
+              <span className="font-mono text-[12px] uppercase tracking-[0.1em] text-ink-mute/60">
                 offload target surface
               </span>
             </div>
@@ -301,7 +296,6 @@ export function HardwarePage() {
         {/* -------------------------- bridge contract ------------------------ */}
         <Card className="xl:col-span-5">
           <CardHeader
-            kicker="native integration"
             title="Telemetry bridge"
             hint="Contract prepared for the desktop build."
             action={<Badge tone="neutral" dot>not attached</Badge>}
@@ -335,16 +329,16 @@ export function HardwarePage() {
                   {row.icon}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <div className="text-[11.5px] text-ink-dim">{row.name}</div>
-                  <div className="truncate font-mono text-[9.5px] text-ink-mute/80">{row.spec}</div>
+                  <div className="text-[13.5px] text-ink-dim">{row.name}</div>
+                  <div className="truncate font-mono text-[12px] text-ink-mute/80">{row.spec}</div>
                 </div>
-                <span className="shrink-0 font-mono text-[8.5px] uppercase tracking-[0.1em] text-ink-mute/70">
+                <span className="shrink-0 font-mono text-[11.5px] uppercase tracking-[0.1em] text-ink-mute/70">
                   {row.status}
                 </span>
               </div>
             ))}
 
-            <p className="text-[10.5px] leading-relaxed text-ink-mute">
+            <p className="text-[13px] leading-relaxed text-ink-mute">
               {TELEMETRY_BRIDGE.reason}
             </p>
 

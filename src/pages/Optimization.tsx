@@ -84,7 +84,6 @@ export function OptimizationPage() {
       <PageHeader
         title="Optimization"
         subtitle="Compose an optimization profile. Execution requires the AETHER engine."
-        code="workspace / optimization"
         meta={<ProvenanceBadge kind="demo" />}
         actions={
           <>
@@ -107,13 +106,12 @@ export function OptimizationPage() {
           {/* ---------------------------- model ---------------------------- */}
           <Card>
             <CardHeader
-              kicker="step 01 · model"
               title="Target model"
               hint="Only registered models can be optimized."
               action={
                 <Link
                   to="/models"
-                  className="focus-ring inline-flex items-center gap-1 rounded font-mono text-[9.5px] uppercase tracking-[0.12em] text-ink-mute hover:text-accent"
+                  className="focus-ring inline-flex items-center gap-1 rounded font-mono text-[12px] uppercase tracking-[0.12em] text-ink-mute hover:text-accent"
                 >
                   manage library
                   <ArrowUpRight className="h-3 w-3" />
@@ -130,7 +128,7 @@ export function OptimizationPage() {
                   action={
                     <Link
                       to="/models"
-                      className="focus-ring inline-flex h-8 items-center rounded-md bg-accent px-3 text-[12px] font-semibold text-[#041016]"
+                      className="focus-ring inline-flex h-8 items-center rounded border border-ink/10 bg-ink px-3 text-[13.5px] font-medium text-base"
                     >
                       Open library
                     </Link>
@@ -177,10 +175,10 @@ export function OptimizationPage() {
                     ['Precision', model.quantization],
                   ].map(([label, value]) => (
                     <div key={label}>
-                      <div className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-ink-mute/80">
+                      <div className="font-mono text-[11.5px] uppercase tracking-[0.14em] text-ink-mute/80">
                         {label}
                       </div>
-                      <div className="mt-1 truncate text-[11.5px] text-ink-dim">{value}</div>
+                      <div className="mt-1 truncate text-[13.5px] text-ink-dim">{value}</div>
                     </div>
                   ))}
                 </div>
@@ -191,11 +189,10 @@ export function OptimizationPage() {
           {/* -------------------------- strategies ------------------------- */}
           <Card>
             <CardHeader
-              kicker="step 02 · strategies"
               title={
                 <span className="flex items-center gap-2">
                   Optimization strategies
-                  <span className="readout text-[11px] font-normal text-ink-mute">
+                  <span className="readout text-[13px] font-normal text-ink-mute">
                     {selectedStrategies.length}/{optimizationStrategies.length}
                   </span>
                 </span>
@@ -225,7 +222,7 @@ export function OptimizationPage() {
                     onClick={() => toggleStrategy(strategy.id)}
                     className={cn(
                       'group flex cursor-pointer items-start gap-3 border-b border-line/40 px-5 py-3 transition-colors last:border-0',
-                      active ? 'bg-accent/[0.035]' : 'hover:bg-surface2/30',
+                      active ? 'bg-surface2/40' : 'hover:bg-surface2/25',
                     )}
                   >
                     <button
@@ -240,7 +237,7 @@ export function OptimizationPage() {
                       className={cn(
                         'focus-ring mt-0.5 flex h-[15px] w-[15px] shrink-0 items-center justify-center rounded-[3px] border transition-colors',
                         active
-                          ? 'border-accent/70 bg-accent text-[#041016]'
+                          ? 'border-accent bg-accent text-base'
                           : 'border-line bg-base/60 text-transparent group-hover:border-ink-mute/50',
                       )}
                     >
@@ -251,13 +248,13 @@ export function OptimizationPage() {
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                         <span
                           className={cn(
-                            'text-[12.5px] font-medium',
+                            'text-[14px] font-medium',
                             active ? 'text-ink' : 'text-ink-dim',
                           )}
                         >
                           {strategy.label}
                         </span>
-                        <span className="rounded border border-line/70 px-1 py-[1px] font-mono text-[8.5px] uppercase tracking-[0.08em] text-ink-mute">
+                        <span className="rounded border border-line/70 px-1 py-[1px] font-mono text-[11.5px] uppercase tracking-[0.08em] text-ink-mute">
                           {strategy.code}
                         </span>
                         <Badge tone={strategy.maturity === 'Preview' ? 'accent' : 'muted'}>
@@ -267,14 +264,14 @@ export function OptimizationPage() {
                           <InfoHint content={strategy.detail} showIcon />
                         </span>
                       </div>
-                      <p className="mt-1 text-[11px] leading-relaxed text-ink-mute">
+                      <p className="mt-1 text-[13px] leading-relaxed text-ink-mute">
                         {strategy.description}
                       </p>
                       <div className="mt-1.5 flex flex-wrap gap-1">
                         {strategy.tags.map((tag) => (
                           <span
                             key={tag}
-                            className="rounded-sm bg-surface2/60 px-1.5 py-[2px] font-mono text-[8.5px] uppercase tracking-[0.08em] text-ink-mute/80"
+                            className="rounded-sm bg-surface2/60 px-1.5 py-[2px] font-mono text-[11.5px] uppercase tracking-[0.08em] text-ink-mute/80"
                           >
                             {tag}
                           </span>
@@ -291,7 +288,7 @@ export function OptimizationPage() {
         {/* ---------------------------- sidebar --------------------------- */}
         <div className="space-y-3 xl:col-span-4">
           <Card>
-            <CardHeader kicker="step 03 · objective" title="Optimization target" />
+            <CardHeader title="Optimization target" />
             <CardBody className="space-y-2">
               {optimizationTargets.map((option) => {
                 const active = option.id === draft.target;
@@ -320,14 +317,14 @@ export function OptimizationPage() {
                       </span>
                       <span
                         className={cn(
-                          'text-[12px] font-medium',
+                          'text-[13.5px] font-medium',
                           active ? 'text-ink' : 'text-ink-dim',
                         )}
                       >
                         {option.label}
                       </span>
                     </div>
-                    <p className="mt-1 pl-5 text-[10.5px] leading-relaxed text-ink-mute">
+                    <p className="mt-1 pl-5 text-[13px] leading-relaxed text-ink-mute">
                       {option.description}
                     </p>
                     <div className="mt-2 grid grid-cols-3 gap-1.5 pl-5">
@@ -337,7 +334,7 @@ export function OptimizationPage() {
                         ['MEM', option.weights.memory],
                       ].map(([label, weight]) => (
                         <div key={String(label)}>
-                          <div className="flex justify-between font-mono text-[8px] text-ink-mute/80">
+                          <div className="flex justify-between font-mono text-[11.5px] text-ink-mute/80">
                             <span>{label}</span>
                             <span>{Math.round(Number(weight) * 100)}</span>
                           </div>
@@ -355,8 +352,8 @@ export function OptimizationPage() {
 
               <div className="mt-1 flex items-center justify-between rounded-md border border-line/60 bg-raised/20 px-3 py-2.5">
                 <div>
-                  <div className="text-[11.5px] font-medium text-ink">Advanced mode</div>
-                  <div className="mt-0.5 text-[10px] text-ink-mute">
+                  <div className="text-[13.5px] font-medium text-ink">Advanced mode</div>
+                  <div className="mt-0.5 text-[12.5px] text-ink-mute">
                     Expose bit-width, cache and offload controls.
                   </div>
                 </div>
@@ -436,7 +433,7 @@ export function OptimizationPage() {
           </Card>
 
           <Card>
-            <CardHeader kicker="step 04 · constraints" title="Resource constraints" />
+            <CardHeader title="Resource constraints" />
             <CardBody className="space-y-3.5">
               <RangeField
                 label="Maximum VRAM"
@@ -491,31 +488,30 @@ export function OptimizationPage() {
           {/* ---------------------------- summary --------------------------- */}
           <Card className="xl:sticky xl:top-[70px]">
             <CardHeader
-              kicker="expected result"
               title="Configuration summary"
               action={<SlidersHorizontal className="h-3.5 w-3.5 text-ink-mute/60" />}
             />
             <CardBody className="space-y-3">
               <div className="space-y-1.5">
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-ink-mute">
+                  <span className="font-mono text-[12px] uppercase tracking-[0.14em] text-ink-mute">
                     model
                   </span>
-                  <span className="truncate text-[11.5px] text-ink-dim">
+                  <span className="truncate text-[13.5px] text-ink-dim">
                     {model?.name ?? 'none selected'}
                   </span>
                 </div>
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-ink-mute">
+                  <span className="font-mono text-[12px] uppercase tracking-[0.14em] text-ink-mute">
                     objective
                   </span>
-                  <span className="truncate text-[11.5px] text-ink-dim">{target.label}</span>
+                  <span className="truncate text-[13.5px] text-ink-dim">{target.label}</span>
                 </div>
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-ink-mute">
+                  <span className="font-mono text-[12px] uppercase tracking-[0.14em] text-ink-mute">
                     strategies
                   </span>
-                  <span className="readout text-[11.5px] text-ink-dim">
+                  <span className="readout text-[13.5px] text-ink-dim">
                     {selectedStrategies.length}
                   </span>
                 </div>
@@ -523,14 +519,14 @@ export function OptimizationPage() {
 
               <div className="flex flex-wrap gap-1">
                 {selectedStrategies.length === 0 ? (
-                  <span className="text-[10.5px] text-warn/90">
+                  <span className="text-[13px] text-warn/90">
                     Select at least one strategy to build a profile.
                   </span>
                 ) : (
                   selectedStrategies.map((strategy) => (
                     <span
                       key={strategy.id}
-                      className="rounded border border-accent/20 bg-accent/[0.05] px-1.5 py-[2px] font-mono text-[8.5px] uppercase tracking-[0.08em] text-accent/90"
+                      className="rounded border border-accent/20 bg-accent/[0.05] px-1.5 py-[2px] font-mono text-[11.5px] uppercase tracking-[0.08em] text-accent/90"
                       title={strategy.label}
                     >
                       {strategy.code}
@@ -550,17 +546,17 @@ export function OptimizationPage() {
                   ['Target', `${draft.constraints.targetTokensPerSecond} tok/s`],
                 ].map(([label, value]) => (
                   <div key={label}>
-                    <div className="font-mono text-[8.5px] uppercase tracking-[0.12em] text-ink-mute/80">
+                    <div className="font-mono text-[11.5px] uppercase tracking-[0.12em] text-ink-mute/80">
                       {label}
                     </div>
-                    <div className="readout mt-0.5 text-[11px] text-ink-dim">{value}</div>
+                    <div className="readout mt-0.5 text-[13px] text-ink-dim">{value}</div>
                   </div>
                 ))}
               </div>
 
-              <div className="flex items-start gap-2 rounded border border-warn/25 bg-warn/[0.05] px-2.5 py-2">
-                <Info className="mt-0.5 h-3 w-3 shrink-0 text-warn" />
-                <p className="text-[10.5px] leading-relaxed text-ink-dim">
+              <div className="flex items-start gap-2 border-l-2 border-warn/60 pl-2.5">
+                <Info className="mt-0.5 h-3 w-3 shrink-0 text-warn/80" />
+                <p className="text-[13px] leading-relaxed text-ink-dim">
                   No profile will be computed. The optimization engine is not bundled with this
                   build — the configuration is stored locally for the future engine.
                 </p>
@@ -575,7 +571,7 @@ export function OptimizationPage() {
               >
                 Start optimization
               </Button>
-              <p className="text-center font-mono text-[9px] uppercase tracking-[0.12em] text-ink-mute/60">
+              <p className="text-center font-mono text-[12px] uppercase tracking-[0.12em] text-ink-mute/60">
                 engine unavailable · configuration saved
               </p>
             </CardBody>
@@ -600,10 +596,10 @@ export function OptimizationPage() {
       >
         <div className="space-y-3">
           <div className="rounded-md border border-line/70 bg-raised/40 px-3 py-2.5">
-            <div className="font-mono text-[9px] uppercase tracking-[0.14em] text-ink-mute">
+            <div className="font-mono text-[12px] uppercase tracking-[0.14em] text-ink-mute">
               submitted configuration
             </div>
-            <div className="mt-1.5 text-[11.5px] text-ink-dim">
+            <div className="mt-1.5 text-[13.5px] text-ink-dim">
               {model?.name} · {target.label} · {selectedStrategies.length} strategies ·{' '}
               {draft.constraints.maxVramGb} {unit} VRAM cap
             </div>
@@ -621,10 +617,10 @@ export function OptimizationPage() {
                 key={step}
                 className="flex items-center gap-3 rounded border border-line/50 px-2.5 py-2"
               >
-                <span className="font-mono text-[9px] text-ink-mute/70">{step}</span>
+                <span className="font-mono text-[12px] text-ink-mute/70">{step}</span>
                 <div className="min-w-0 flex-1">
-                  <div className="text-[11.5px] text-ink-dim">{label}</div>
-                  <div className="font-mono text-[9px] uppercase tracking-[0.08em] text-ink-mute/70">
+                  <div className="text-[13.5px] text-ink-dim">{label}</div>
+                  <div className="font-mono text-[12px] uppercase tracking-[0.08em] text-ink-mute/70">
                     {detail}
                   </div>
                 </div>
@@ -637,7 +633,7 @@ export function OptimizationPage() {
 
           <div className="flex items-start gap-2 rounded border border-line/60 bg-raised/30 px-2.5 py-2">
             <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-ink-mute" />
-            <p className="text-[10.5px] leading-relaxed text-ink-mute">
+            <p className="text-[13px] leading-relaxed text-ink-mute">
               No benchmark numbers have been produced for this request. AETHER will never fabricate
               optimization results.
             </p>

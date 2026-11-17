@@ -12,19 +12,19 @@ export function MetricComparisonTable({ metrics }: { metrics: BenchmarkMetric[] 
       <table className="w-full min-w-[620px] border-collapse text-left">
         <thead>
           <tr className="border-b border-line/70">
-            <th className="px-3 py-2 pl-5 font-mono text-[9px] font-medium uppercase tracking-[0.14em] text-ink-mute">
+            <th className="py-2 pl-4 pr-3 font-mono text-[11.5px] font-normal uppercase tracking-[0.08em] text-ink-mute/70">
               Metric
             </th>
-            <th className="px-3 py-2 text-right font-mono text-[9px] font-medium uppercase tracking-[0.14em] text-ink-mute">
+            <th className="px-3 py-2 text-right font-mono text-[11.5px] font-normal uppercase tracking-[0.08em] text-ink-mute/70">
               Baseline
             </th>
-            <th className="px-3 py-2 text-right font-mono text-[9px] font-medium uppercase tracking-[0.14em] text-ink-mute">
+            <th className="px-3 py-2 text-right font-mono text-[11.5px] font-normal uppercase tracking-[0.08em] text-ink-mute/70">
               Optimized
             </th>
-            <th className="px-3 py-2 text-right font-mono text-[9px] font-medium uppercase tracking-[0.14em] text-ink-mute">
+            <th className="px-3 py-2 text-right font-mono text-[11.5px] font-normal uppercase tracking-[0.08em] text-ink-mute/70">
               Delta
             </th>
-            <th className="w-[28%] px-3 py-2 pr-5 font-mono text-[9px] font-medium uppercase tracking-[0.14em] text-ink-mute">
+            <th className="w-[26%] py-2 pl-3 pr-4 font-mono text-[11.5px] font-normal uppercase tracking-[0.08em] text-ink-mute/70">
               Relative
             </th>
           </tr>
@@ -39,27 +39,27 @@ export function MetricComparisonTable({ metrics }: { metrics: BenchmarkMetric[] 
 
             return (
               <tr key={metric.id} className="border-b border-line/30 last:border-0">
-                <td className="px-3 py-2.5 pl-5">
+                <td className="py-2 pl-4 pr-3">
                   <InfoHint
-                    label={<span className="text-[12px] text-ink-dim">{metric.label}</span>}
+                    label={<span className="text-[13.5px] text-ink-dim">{metric.label}</span>}
                     content={metric.description}
                     className="font-normal"
                     showIcon
                   />
-                  <div className="mt-0.5 font-mono text-[9px] uppercase tracking-[0.1em] text-ink-mute/70">
+                  <div className="mt-0.5 font-mono text-[11.5px] text-ink-mute/60">
                     {metric.unit} · {metric.betterWhen} is better
                   </div>
                 </td>
-                <td className="readout px-3 py-2.5 text-right text-[12px] text-ink-mute">
+                <td className="readout px-3 py-2 text-right text-[13px] text-ink-mute">
                   {formatNumber(metric.original, metric.original < 20 ? 2 : 1)}
                 </td>
-                <td className="readout px-3 py-2.5 text-right text-[12px] text-ink">
+                <td className="readout px-3 py-2 text-right text-[13px] text-ink">
                   {formatNumber(metric.optimized, metric.optimized < 20 ? 2 : 1)}
                 </td>
-                <td className="px-3 py-2.5 text-right">
+                <td className="px-3 py-2 text-right">
                   <span
                     className={cn(
-                      'inline-flex items-center gap-0.5 font-mono text-[11px] tabular-nums',
+                      'inline-flex items-center gap-0.5 font-mono text-[13px] tabular-nums',
                       isImprovement && 'text-ok',
                       isRegression && 'text-danger',
                       !isImprovement && !isRegression && 'text-ink-mute',
@@ -69,16 +69,16 @@ export function MetricComparisonTable({ metrics }: { metrics: BenchmarkMetric[] 
                     {signedPercent(improvement)}
                   </span>
                 </td>
-                <td className="px-3 py-2.5 pr-5">
-                  <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-surface2">
+                <td className="py-2 pl-3 pr-4">
+                  <div className="relative h-[3px] w-full overflow-hidden rounded-[1px] bg-surface2">
                     <div
                       className={cn(
-                        'absolute inset-y-0 left-0 rounded-full bg-gradient-to-r',
+                        'absolute inset-y-0 left-0',
                         isImprovement
-                          ? 'from-accent/60 to-accent'
+                          ? 'bg-accent'
                           : isRegression
-                            ? 'from-danger/50 to-danger/80'
-                            : 'from-ink-mute/40 to-ink-mute/60',
+                            ? 'bg-danger/70'
+                            : 'bg-ink-mute/50',
                       )}
                       style={{ width: `${Math.min(100, (index.optimized / 140) * 100)}%` }}
                     />

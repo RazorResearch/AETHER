@@ -3,14 +3,15 @@ import { cn } from '@/utils/cn';
 
 export type BadgeTone = 'neutral' | 'accent' | 'glacier' | 'ok' | 'warn' | 'danger' | 'muted';
 
+/* Outlined, low-chroma status marks — no tinted pills. */
 const tones: Record<BadgeTone, string> = {
-  neutral: 'border-line bg-surface2/60 text-ink-dim',
-  accent: 'border-accent/30 bg-accent/[0.08] text-accent',
-  glacier: 'border-glacier/30 bg-glacier/[0.08] text-glacier',
-  ok: 'border-ok/30 bg-ok/[0.08] text-ok',
-  warn: 'border-warn/30 bg-warn/[0.08] text-warn',
-  danger: 'border-danger/30 bg-danger/[0.09] text-danger',
-  muted: 'border-line/70 bg-transparent text-ink-mute',
+  neutral: 'border-line/80 text-ink-mute',
+  accent: 'border-accent/30 text-accent',
+  glacier: 'border-glacier/30 text-glacier',
+  ok: 'border-ok/30 text-ok',
+  warn: 'border-warn/35 text-warn',
+  danger: 'border-danger/35 text-danger',
+  muted: 'border-line/60 text-ink-mute/80',
 };
 
 const dotTones: Record<BadgeTone, string> = {
@@ -29,7 +30,7 @@ interface BadgeProps {
   dot?: boolean;
   className?: string;
   mono?: boolean;
-  /** Adds a soft pulse to the status dot (used for running states). */
+  /** Kept for API compatibility; status marks no longer pulse. */
   pulse?: boolean;
 }
 
@@ -41,23 +42,17 @@ export function Badge({
   mono = false,
   pulse = false,
 }: BadgeProps) {
+  void pulse;
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 whitespace-nowrap rounded border px-1.5 py-[3px] text-[10.5px] font-medium leading-none',
-        mono && 'font-mono uppercase tracking-[0.08em] text-[10px]',
+        'inline-flex items-center gap-1.5 whitespace-nowrap rounded-sm border px-1.5 py-[2px] text-[12.5px] leading-none',
+        mono && 'font-mono text-[12px] uppercase tracking-[0.06em]',
         tones[tone],
         className,
       )}
     >
-      {dot && (
-        <span className="relative flex h-1.5 w-1.5 items-center justify-center">
-          {pulse && (
-            <span className={cn('absolute h-2.5 w-2.5 animate-ping rounded-full opacity-40', dotTones[tone])} />
-          )}
-          <span className={cn('h-1.5 w-1.5 rounded-full', dotTones[tone])} />
-        </span>
-      )}
+      {dot && <span className={cn('h-[4px] w-[4px] rounded-[1px]', dotTones[tone])} />}
       {children}
     </span>
   );
@@ -80,12 +75,12 @@ export function ProvenanceBadge({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 rounded border border-dashed border-accent/30 bg-accent/[0.04] px-1.5 py-[3px] font-mono text-[9px] uppercase tracking-[0.14em] text-accent/85',
+        'inline-flex items-center gap-1.5 rounded-sm border border-line/80 px-1.5 py-[2px] font-mono text-[11.5px] uppercase tracking-[0.12em] text-ink-mute',
         className,
       )}
       title="Generated locally for interface preview. Not measured from real hardware or models."
     >
-      <span className="h-1 w-1 rounded-[1px] bg-accent/70" />
+      <span className="h-[4px] w-[4px] rounded-[1px] bg-accent/80" />
       {labels[kind]}
     </span>
   );

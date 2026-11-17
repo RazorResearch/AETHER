@@ -33,26 +33,8 @@ export function PerformanceTrendChart({
   return (
     <div style={{ height }} className="w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 8, right: 10, bottom: 0, left: -18 }}>
-          <defs>
-            {performanceSeriesMeta.map((series) => {
-              const color = theme[colorMap[series.color]];
-              return (
-                <linearGradient
-                  key={series.key}
-                  id={`perf-${series.key}`}
-                  x1="0"
-                  y1="0"
-                  x2="0"
-                  y2="1"
-                >
-                  <stop offset="0%" stopColor={color} stopOpacity={0.22} />
-                  <stop offset="100%" stopColor={color} stopOpacity={0} />
-                </linearGradient>
-              );
-            })}
-          </defs>
-          <CartesianGrid stroke={theme.grid} strokeDasharray="2 4" vertical={false} />
+        <AreaChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -22 }}>
+          <CartesianGrid stroke={theme.grid} vertical={false} />
           <XAxis
             dataKey="day"
             tick={axisTickStyle(theme)}
@@ -76,15 +58,16 @@ export function PerformanceTrendChart({
           {performanceSeriesMeta.map((series) => (
             <Area
               key={series.key}
-              type="monotone"
+              type="linear"
               dataKey={series.key}
               name={series.label}
               stroke={theme[colorMap[series.color]]}
-              strokeWidth={1.6}
-              fill={`url(#perf-${series.key})`}
+              strokeWidth={1.2}
+              fill={theme[colorMap[series.color]]}
+              fillOpacity={0.05}
               dot={false}
+              activeDot={{ r: 2.5, strokeWidth: 0, fill: theme[colorMap[series.color]] }}
               isAnimationActive={false}
-              activeDot={{ r: 3, strokeWidth: 0, fill: theme[colorMap[series.color]] }}
             />
           ))}
         </AreaChart>
@@ -96,13 +79,10 @@ export function PerformanceTrendChart({
 export function PerformanceLegend() {
   const theme = useChartTheme();
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
       {performanceSeriesMeta.map((series) => (
-        <span key={series.key} className="inline-flex items-center gap-1.5 text-[10.5px] text-ink-mute">
-          <span
-            className="h-[2px] w-4 rounded-full"
-            style={{ background: theme[colorMap[series.color]] }}
-          />
+        <span key={series.key} className="inline-flex items-center gap-1.5 text-[12.5px] text-ink-mute">
+          <span className="h-[1.5px] w-3" style={{ background: theme[colorMap[series.color]] }} />
           {series.label}
         </span>
       ))}

@@ -18,26 +18,26 @@ export function BenchmarkRadar({ height = 252 }: { height?: number }) {
   return (
     <div style={{ height }} className="w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <RadarChart data={benchmarkRadar} outerRadius="72%">
+        <RadarChart data={benchmarkRadar} outerRadius="70%">
           <PolarGrid stroke={theme.grid} />
-          <PolarAngleAxis dataKey="axis" tick={{ ...axisTickStyle(theme), fontSize: 9.5 }} />
+          <PolarAngleAxis dataKey="axis" tick={{ ...axisTickStyle(theme), fontSize: 10.5 }} />
           <Tooltip {...tooltip} />
           <Radar
             name="Baseline"
             dataKey="original"
             stroke={theme.glacier}
-            strokeWidth={1.3}
+            strokeWidth={1}
             fill={theme.glacier}
-            fillOpacity={0.1}
+            fillOpacity={0.05}
             isAnimationActive={false}
           />
           <Radar
             name="Optimized"
             dataKey="optimized"
             stroke={theme.accent}
-            strokeWidth={1.6}
+            strokeWidth={1.2}
             fill={theme.accent}
-            fillOpacity={0.16}
+            fillOpacity={0.1}
             isAnimationActive={false}
           />
         </RadarChart>

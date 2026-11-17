@@ -7,19 +7,19 @@ import { cn } from '@/utils/cn';
 const toneStyles: Record<ToastTone, { icon: ReactNode; className: string }> = {
   success: {
     icon: <CheckCircle2 className="h-4 w-4" />,
-    className: 'border-ok/35 text-ok',
+    className: 'border-l-ok text-ok',
   },
   info: {
     icon: <Info className="h-4 w-4" />,
-    className: 'border-accent/35 text-accent',
+    className: 'border-l-accent text-accent',
   },
   warning: {
     icon: <AlertTriangle className="h-4 w-4" />,
-    className: 'border-warn/35 text-warn',
+    className: 'border-l-warn text-warn',
   },
   error: {
     icon: <XCircle className="h-4 w-4" />,
-    className: 'border-danger/35 text-danger',
+    className: 'border-l-danger text-danger',
   },
 };
 
@@ -40,15 +40,15 @@ export function Toasts() {
           <div
             key={item.id}
             className={cn(
-              'pointer-events-auto flex animate-toast-in items-start gap-3 rounded-md border bg-raised/95 px-3.5 py-3 shadow-modal backdrop-blur-sm',
+              'pointer-events-auto flex animate-toast-in items-start gap-2.5 rounded-sm border border-line/80 border-l-2 bg-raised px-3 py-2.5',
               style.className,
             )}
           >
             <span className="mt-0.5 shrink-0">{style.icon}</span>
             <div className="min-w-0 flex-1">
-              <p className="text-[12px] font-medium text-ink">{item.title}</p>
+              <p className="text-[13.5px] font-medium text-ink">{item.title}</p>
               {item.description && (
-                <p className="mt-1 text-[11px] leading-relaxed text-ink-mute">{item.description}</p>
+                <p className="mt-1 text-[13px] leading-relaxed text-ink-mute">{item.description}</p>
               )}
             </div>
             <button

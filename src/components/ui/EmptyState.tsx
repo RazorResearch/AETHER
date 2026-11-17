@@ -22,8 +22,8 @@ export function EmptyState({ icon, title, description, action, className, compac
       <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-md border border-line bg-surface text-ink-mute [&>svg]:h-4 [&>svg]:w-4">
         {icon}
       </div>
-      <h3 className="text-[13px] font-medium text-ink">{title}</h3>
-      <p className="mt-1.5 max-w-[42ch] text-[11.5px] leading-relaxed text-ink-mute">{description}</p>
+      <h3 className="text-[14.5px] font-medium text-ink">{title}</h3>
+      <p className="mt-1.5 max-w-[42ch] text-[13.5px] leading-relaxed text-ink-mute">{description}</p>
       {action && <div className="mt-4">{action}</div>}
     </div>
   );

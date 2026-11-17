@@ -43,10 +43,10 @@ export function ComparisonChart({ metrics, height = 268 }: ComparisonChartProps)
         <BarChart
           data={data}
           layout="vertical"
-          margin={{ top: 4, right: 26, bottom: 0, left: 0 }}
-          barGap={2}
+          margin={{ top: 4, right: 24, bottom: 0, left: 0 }}
+          barGap={1}
         >
-          <CartesianGrid stroke={theme.grid} strokeDasharray="2 4" horizontal={false} />
+          <CartesianGrid stroke={theme.grid} vertical />
           <XAxis
             type="number"
             domain={[0, 140]}
@@ -59,14 +59,14 @@ export function ComparisonChart({ metrics, height = 268 }: ComparisonChartProps)
           <YAxis
             type="category"
             dataKey="label"
-            width={132}
-            tick={{ ...axisTickStyle(theme), fontSize: 10 }}
+            width={140}
+            tick={{ ...axisTickStyle(theme), fontSize: 10.5 }}
             tickLine={false}
             axisLine={false}
           />
           <Tooltip
             {...tooltip}
-            cursor={{ fill: 'rgb(148 163 184 / 0.06)' }}
+            cursor={{ fill: 'rgb(148 163 184 / 0.05)' }}
             formatter={(value: number | string, name: string, item) => {
               if (name === 'Optimized') {
                 const delta = (item?.payload as { delta?: number } | undefined)?.delta ?? 0;
@@ -75,22 +75,20 @@ export function ComparisonChart({ metrics, height = 268 }: ComparisonChartProps)
               return [`${value} index`, name];
             }}
           />
-          <ReferenceLine x={100} stroke={theme.axis} strokeDasharray="3 3" />
+          <ReferenceLine x={100} stroke={theme.axis} strokeDasharray="2 3" />
           <Bar
             dataKey="baseline"
             name="Baseline"
             fill={theme.axis}
-            fillOpacity={0.55}
-            radius={[0, 2, 2, 0]}
-            barSize={7}
+            fillOpacity={0.35}
+            barSize={6}
             isAnimationActive={false}
           />
           <Bar
             dataKey="optimized"
             name="Optimized"
             fill={theme.accent}
-            radius={[0, 2, 2, 0]}
-            barSize={7}
+            barSize={6}
             isAnimationActive={false}
           />
         </BarChart>

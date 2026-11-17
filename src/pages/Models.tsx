@@ -93,7 +93,6 @@ export function ModelsPage() {
       <PageHeader
         title="Models"
         subtitle="Local model library — metadata only, no weights are copied or parsed."
-        code="workspace / library"
         meta={<ProvenanceBadge />}
         actions={
           <>
@@ -109,11 +108,10 @@ export function ModelsPage() {
 
       <Card>
         <CardHeader
-          kicker="model library"
           title={
             <span className="flex items-center gap-2">
               Registered models
-              <span className="readout text-[11px] font-normal text-ink-mute">
+              <span className="readout text-[13px] font-normal text-ink-mute">
                 {filtered.length}/{models.length}
               </span>
             </span>
@@ -131,7 +129,7 @@ export function ModelsPage() {
             wrapperClassName="w-full max-w-[340px]"
             aria-label="Search models"
           />
-          <span className="ml-auto hidden items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.12em] text-ink-mute/70 sm:flex">
+          <span className="ml-auto hidden items-center gap-1.5 font-mono text-[12px] uppercase tracking-[0.12em] text-ink-mute/70 sm:flex">
             <Info className="h-3 w-3" />
             sorted by import date
           </span>
@@ -184,11 +182,11 @@ export function ModelsPage() {
         )}
 
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line/40 px-5 py-2.5">
-          <p className="flex items-center gap-1.5 text-[10.5px] text-ink-mute">
+          <p className="flex items-center gap-1.5 text-[13px] text-ink-mute">
             <AlertTriangle className="h-3 w-3 text-warn/70" />
             Demonstration metadata — no model files exist on disk.
           </p>
-          <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-ink-mute/60">
+          <span className="font-mono text-[12px] uppercase tracking-[0.12em] text-ink-mute/60">
             local storage only
           </span>
         </div>
@@ -256,23 +254,23 @@ export function ModelsPage() {
                 ['Model id', detail.id],
               ].map(([label, value]) => (
                 <div key={label}>
-                  <dt className="font-mono text-[9px] uppercase tracking-[0.14em] text-ink-mute">
+                  <dt className="font-mono text-[12px] uppercase tracking-[0.14em] text-ink-mute">
                     {label}
                   </dt>
-                  <dd className="mt-1 break-words text-[12px] text-ink-dim">{value}</dd>
+                  <dd className="mt-1 break-words text-[13.5px] text-ink-dim">{value}</dd>
                 </div>
               ))}
             </dl>
 
             <div className="rounded-md border border-line/70 bg-raised/40 px-3 py-2.5">
-              <div className="font-mono text-[9px] uppercase tracking-[0.14em] text-ink-mute">Notes</div>
-              <p className="mt-1.5 text-[11.5px] leading-relaxed text-ink-dim">
+              <div className="font-mono text-[12px] uppercase tracking-[0.14em] text-ink-mute">Notes</div>
+              <p className="mt-1.5 text-[13.5px] leading-relaxed text-ink-dim">
                 {detail.notes ??
                   'No notes for this record. Notes are stored with the model metadata only.'}
               </p>
             </div>
 
-            <p className="text-[10.5px] leading-relaxed text-ink-mute/80">
+            <p className="text-[13px] leading-relaxed text-ink-mute/80">
               Removing the entry does not touch the filesystem. A native build will unlink files only
               after an explicit confirmation from the local runtime.
             </p>
@@ -300,7 +298,7 @@ export function ModelsPage() {
       >
         <div className="flex items-start gap-2.5 rounded-md border border-danger/25 bg-danger/[0.05] px-3 py-2.5">
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-danger" />
-          <p className="text-[11.5px] leading-relaxed text-ink-dim">
+          <p className="text-[13.5px] leading-relaxed text-ink-dim">
             <span className="text-ink">{deleteTarget?.name}</span> will disappear from the library.
             Experiments referencing this model will keep its identifier until they are updated.
           </p>
@@ -410,24 +408,24 @@ function ModelDialog({ mode, onClose, onSubmit }: ModelDialogProps) {
               {pickedFile ? (
                 <>
                   <FolderOpen className="mb-2 h-4 w-4 text-accent" />
-                  <span className="text-[12px] font-medium text-ink">{pickedFile.name}</span>
-                  <span className="mt-1 font-mono text-[10px] text-ink-mute">
+                  <span className="text-[13.5px] font-medium text-ink">{pickedFile.name}</span>
+                  <span className="mt-1 font-mono text-[12.5px] text-ink-mute">
                     {(pickedFile.size / GIB).toFixed(2)} GiB reported by the file input
                   </span>
                 </>
               ) : (
                 <>
                   <FileUp className="mb-2 h-4 w-4 text-ink-mute" />
-                  <span className="text-[12px] font-medium text-ink-dim">
+                  <span className="text-[13.5px] font-medium text-ink-dim">
                     Choose a .gguf or .safetensors file
                   </span>
-                  <span className="mt-1 text-[10.5px] text-ink-mute">
+                  <span className="mt-1 text-[13px] text-ink-mute">
                     Reads only name and size — no content is parsed.
                   </span>
                 </>
               )}
             </label>
-            {fileError && <p className="mt-1.5 text-[10.5px] text-danger">{fileError}</p>}
+            {fileError && <p className="mt-1.5 text-[13px] text-danger">{fileError}</p>}
           </div>
         )}
 
@@ -497,7 +495,7 @@ function ModelDialog({ mode, onClose, onSubmit }: ModelDialogProps) {
         </div>
 
         {!canSubmit && (
-          <p className="text-[10.5px] text-ink-mute">A model name is required to register a record.</p>
+          <p className="text-[13px] text-ink-mute">A model name is required to register a record.</p>
         )}
       </div>
     </Modal>

@@ -72,7 +72,6 @@ export function OverviewPage() {
       <PageHeader
         title="Overview"
         subtitle="Local AI optimization workspace."
-        code="workspace / overview"
         meta={<ProvenanceBadge />}
         actions={
           <>
@@ -99,29 +98,25 @@ export function OverviewPage() {
       />
 
       {/* ------------------------------ hardware ------------------------------ */}
-      <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <h2 className="text-[11px] font-medium uppercase tracking-[0.16em] text-ink-dim">
-            Hardware overview
-          </h2>
-          <ProvenanceBadge kind="simulated" />
-        </div>
+      <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="text-[13.5px] font-medium text-ink-dim">Hardware</h2>
         <Link
           to="/hardware"
-          className="focus-ring inline-flex items-center gap-1 rounded font-mono text-[10px] uppercase tracking-[0.12em] text-ink-mute transition-colors hover:text-accent"
+          className="focus-ring inline-flex items-center gap-1 rounded-sm text-[12.5px] text-ink-mute transition-colors hover:text-ink"
         >
-          full diagnostics
+          Full diagnostics
           <ArrowUpRight className="h-3 w-3" />
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {refreshing ? (
-          Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton key={index} className="h-[124px] w-full rounded-lg" />
-          ))
-        ) : (
-          <>
+      <Card className="overflow-hidden">
+        <div className="grid grid-cols-1 gap-px bg-line/50 sm:grid-cols-2 xl:grid-cols-4">
+          {refreshing ? (
+            Array.from({ length: 4 }).map((_, index) => (
+              <Skeleton key={index} className="h-[118px] w-full rounded-none" />
+            ))
+          ) : (
+            <>
             <MetricCard
               label="GPU VRAM usage"
               value={formatNumber(snapshot.vramUsedGb, 1)}
@@ -162,28 +157,30 @@ export function OverviewPage() {
               tone="warn"
               detail="Aggregate processor load. Offloaded transformer layers execute here, so this rises when VRAM ceilings force CPU placement."
             />
-          </>
-        )}
-      </div>
+            </>
+          )}
+        </div>
+        <div className="flex items-center gap-2 border-t border-line/50 px-4 py-2 text-[12.5px] text-ink-mute">
+          <ProvenanceBadge kind="simulated" />
+          <span>Generated locally — no GPU or system counters are read.</span>
+        </div>
+      </Card>
 
       {/* --------------------------- workspace + perf ------------------------- */}
       <div className="mt-3 grid grid-cols-1 gap-3 xl:grid-cols-12">
         <Card className="xl:col-span-8">
           <CardHeader
-            kicker="performance overview"
             title="Decode throughput"
             hint="Tokens per second per model across the selected window."
-            action={<Badge tone="accent" mono>demo series</Badge>}
+            action={<ProvenanceBadge />}
           />
           <CardBody className="pb-3 pt-4">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <PerformanceLegend />
-              <span className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-ink-mute/70">
-                tok/s · batch 1 · simulated
-              </span>
+              <span className="font-mono text-[12px] text-ink-mute/70">tok/s · batch 1 · simulated</span>
             </div>
             <PerformanceTrendChart days={Number(period)} />
-            <p className="mt-2 border-t border-line/40 pt-2.5 text-[10.5px] leading-relaxed text-ink-mute">
+            <p className="mt-2 border-t border-line/40 pt-2.5 text-[13px] leading-relaxed text-ink-mute">
               Demonstration series only. AETHER has not measured these values — the inference engine
               is not part of this build.
             </p>
@@ -192,12 +189,11 @@ export function OverviewPage() {
 
         <Card className="xl:col-span-4">
           <CardHeader
-            kicker="active workspace"
             title="Library state"
             action={
               <Link
                 to="/models"
-                className="focus-ring rounded font-mono text-[9.5px] uppercase tracking-[0.12em] text-ink-mute hover:text-accent"
+                className="focus-ring rounded-sm text-[12.5px] text-ink-mute hover:text-ink"
               >
                 library
               </Link>
@@ -224,21 +220,21 @@ export function OverviewPage() {
 
             <div className="rounded-md border border-line/70 bg-raised/40 px-3 py-3">
               <div className="flex items-center justify-between">
-                <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-ink-mute">
+                <span className="font-mono text-[12px] uppercase tracking-[0.14em] text-ink-mute">
                   Last model used
                 </span>
                 {lastModel && <Badge tone="ok" dot>{lastModel.status}</Badge>}
               </div>
               {lastModel ? (
                 <>
-                  <div className="mt-2 text-[12.5px] font-medium leading-snug text-ink">
+                  <div className="mt-2 text-[14px] font-medium leading-snug text-ink">
                     {lastModel.name}
                   </div>
-                  <div className="mt-1 font-mono text-[10px] text-ink-mute">
+                  <div className="mt-1 font-mono text-[12.5px] text-ink-mute">
                     {lastModel.quantization} · {lastModel.format} ·{' '}
                     {formatGigabytes(lastModel.sizeBytes / 1024 ** 3, unit)}
                   </div>
-                  <div className="mt-2 flex items-center justify-between text-[10px] text-ink-mute">
+                  <div className="mt-2 flex items-center justify-between text-[12.5px] text-ink-mute">
                     <span>registered {formatRelative(lastModel.importedAt)}</span>
                     <span className="font-mono uppercase tracking-[0.1em] text-ink-mute/70">
                       session 01
@@ -246,13 +242,13 @@ export function OverviewPage() {
                   </div>
                 </>
               ) : (
-                <p className="mt-2 text-[11.5px] text-ink-mute">No model registered yet.</p>
+                <p className="mt-2 text-[13.5px] text-ink-mute">No model registered yet.</p>
               )}
             </div>
 
             <Link
               to="/optimization"
-              className="focus-ring inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-md border border-line bg-surface2/70 text-[12px] font-medium text-ink transition-colors hover:border-accent/40 hover:text-accent"
+              className="focus-ring inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-md border border-line bg-surface2/70 text-[13.5px] font-medium text-ink transition-colors hover:border-accent/40 hover:text-accent"
             >
               Configure an optimization
               <ArrowRight className="h-3.5 w-3.5" />
@@ -265,12 +261,11 @@ export function OverviewPage() {
       <div className="mt-3 grid grid-cols-1 gap-3 xl:grid-cols-12">
         <Card className="xl:col-span-7">
           <CardHeader
-            kicker="recent activity"
             title="Event stream"
             action={
               <Link
                 to="/activity"
-                className="focus-ring inline-flex items-center gap-1 rounded font-mono text-[9.5px] uppercase tracking-[0.12em] text-ink-mute hover:text-accent"
+                className="focus-ring inline-flex items-center gap-1 rounded font-mono text-[12px] uppercase tracking-[0.12em] text-ink-mute hover:text-accent"
               >
                 view log
                 <ArrowUpRight className="h-3 w-3" />
@@ -295,7 +290,6 @@ export function OverviewPage() {
 
         <Card className="xl:col-span-5">
           <CardHeader
-            kicker="library snapshot"
             title="Registered models"
             action={<ProvenanceBadge />}
           />
@@ -310,7 +304,7 @@ export function OverviewPage() {
                   action={
                     <Link
                       to="/models"
-                      className="focus-ring inline-flex h-8 items-center rounded-md bg-accent px-3 text-[12px] font-semibold text-[#041016]"
+                      className="focus-ring inline-flex h-8 items-center rounded border border-ink/10 bg-ink px-3 text-[13.5px] font-medium text-base"
                     >
                       Open library
                     </Link>
@@ -322,12 +316,12 @@ export function OverviewPage() {
                 {models.slice(0, 5).map((model) => (
                   <li key={model.id} className="flex items-center gap-3 px-5 py-2.5">
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-[12px] text-ink-dim">{model.name}</div>
-                      <div className="font-mono text-[9.5px] text-ink-mute/80">
+                      <div className="truncate text-[13.5px] text-ink-dim">{model.name}</div>
+                      <div className="font-mono text-[12px] text-ink-mute/80">
                         {model.quantization} · {formatGigabytes(model.sizeBytes / 1024 ** 3, unit)}
                       </div>
                     </div>
-                    <span className="readout text-[10.5px] text-ink-mute">{model.parameters}</span>
+                    <span className="readout text-[13px] text-ink-mute">{model.parameters}</span>
                     <Badge
                       tone={model.status === 'Unavailable' ? 'danger' : model.status === 'Ready' ? 'ok' : 'neutral'}
                     >
@@ -338,9 +332,7 @@ export function OverviewPage() {
               </ul>
             )}
             <div className="border-t border-line/40 px-5 py-2.5">
-              <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-ink-mute/60">
-                demo library · stored locally
-              </p>
+              <p className="font-mono text-[12px] text-ink-mute/60">demo library · stored locally</p>
             </div>
           </CardBody>
         </Card>
