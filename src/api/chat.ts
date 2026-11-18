@@ -61,6 +61,7 @@ export interface RuntimeStatus {
   port: number | null;
   since: number | null;
   load_time_s: number | null;
+  vram_resident_bytes?: number | null;
   placement: Placement;
   build_info: string | null;
   error: string | null;

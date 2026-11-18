@@ -128,7 +128,7 @@ export function MetricsPanel() {
             <>
               <Row label="Speed (llama.cpp)" value={tps(m.engine.tokens_per_s)} source="llama-server timings" />
               <Row label="Speed (wall)" value={tps(m.wall.tokens_per_s)} source="AETHER, includes streaming overhead" />
-              <Row label="Generated tokens" value={num(m.engine.completion_tokens)} />
+              <Row label="Generated tokens" value={num(m.engine.completion_tokens ?? m.wall.streamed_chunks)} source={m.engine.completion_tokens == null ? "streamed chunks counted by AETHER (llama.cpp count unavailable for a stopped answer)" : "llama-server usage"} />
               <Row label="Time to first token" value={ms(m.wall.ttft_ms, 1)} source="wall clock, request → first token" />
               <Row label="Time per output token" value={ms(m.engine.tpot_ms ?? m.wall.tpot_ms, 2)} />
               <Row label="Prompt tokens" value={num(m.engine.prompt_tokens)} />

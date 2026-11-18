@@ -468,7 +468,111 @@ improvement. `quality` with basis `proxy` is the mean KV-cache bit-width, not a 
 
 ---
 
-## 8. Not implemented in v0.1 (contract reserved)
+## 8. Chat & live inference (`/chat`)
+
+Interactive generation runs on **llama.cpp's `llama-server`**, managed by the engine (one resident model,
+bound to 127.0.0.1 on a free port). Binaries are found in `AETHER_LLAMACPP_DIR`, `backend/vendor/llama.cpp/<build>`
+or `PATH`. Without them, chat endpoints answer `503 ENGINE_UNAVAILABLE`.
+
+### Types
+
+```ts
+interface RuntimeConfig {            // load-time: changing it reloads the model
+  n_ctx: number; n_gpu_layers: number /* 99 = all */; n_threads: number | null; n_batch: number; n_ubatch: number;
+  flash_attn: "on" | "off" | "auto"; cache_type_k: string; cache_type_v: string;   // f16 bf16 q8_0 q5_1 q5_0 q4_1 q4_0 iq4_nl
+}
+interface SamplingParams {           // per request
+  temperature: number; top_p: number; top_k: number; min_p: number; repeat_penalty: number;
+  max_tokens: number; seed: number | null;
+}
+interface RuntimeStatus {
+  state: "unloaded" | "loading" | "ready" | "unloading" | "error";
+  model_id: string | null; config: RuntimeConfig | null; pid: number | null; load_time_s: number | null;
+  vram_resident_bytes: number | null;          // device VRAM after load − before load (measured)
+  placement: { layers_on_gpu: number | null; layers_total: number | null; device: string | null;
+               buffers_mib: Record<string, Record<"model" | "KV" | "compute", number>> };   // from llama.cpp load log
+  build_info: string | null; error: string | null; log_tail: string[];
+}
+```
+
+Validation (422): context ≤ the model's training context; threads ≤ logical cores; `n_ubatch ≤ n_batch`;
+supported KV types; a quantized V cache requires `flash_attn` ≠ `off`; GGUF only.
+
+### Endpoints
+
+| Method & path | Body | Response |
+|---|---|---|
+| `GET /chat/models` | — | `{ items: ChatModel[], runtime: RuntimeStatus, backend: BackendInfo }` — `ChatModel` adds `loadable`, `unavailable_reason`, `state`, `n_layers` |
+| `GET /chat/runtime` | — | `RuntimeStatus` |
+| `POST /chat/runtime/load` | `{ model_id, runtime }` | `RuntimeStatus` (blocks until ready; `MODEL_LOAD_FAILED` with `details.log_tail`) |
+| `POST /chat/runtime/unload` | — | `RuntimeStatus` |
+| `GET /chat/sessions` | — | `{ items: (ChatSession & {message_count})[], total }` |
+| `POST /chat/sessions` | `{ title?, model_id? }` | `201 ChatSession` |
+| `GET /chat/sessions/{id}` | — | `ChatSession & { messages: ChatMessage[] }` |
+| `PATCH /chat/sessions/{id}` | `{ title }` | `ChatSession` |
+| `DELETE /chat/sessions/{id}` | — | `204` |
+| `POST /chat/generate` | `GenerateRequest` | `text/event-stream` (below) |
+| `POST /chat/stop` | `{ generation_id? }` | `{ stopped: boolean }` |
+| `GET /chat/metrics` | — | `{ runtime, generation: LiveSnapshot | null }` (polling alternative to SSE) |
+| `GET /chat/performance?model_id&limit` | — | past answers with their stored metrics |
+| `GET /chat/profiles` · `POST /chat/profiles` | `{ name, model_id?, generation, runtime, notes? }` | profiles (`model`, `backend` attached) |
+| `PATCH /chat/profiles/{id}` · `POST …/{id}/duplicate` · `DELETE …/{id}` | partial profile | profile / `204` |
+| `GET /chat/presets?model_id=` | — | 5 hardware-aware presets (Maximum Speed, Balanced, Low Memory, Maximum Context, Custom) with **estimated** memory |
+| `POST /chat/compare` | `CompareRequest` (`confirm: true` required) | `202 Comparison` (job) |
+| `GET /chat/compare` · `GET /chat/compare/{id}` | — | comparisons with `job` progress and `results` |
+
+```ts
+interface GenerateRequest {
+  model_id: string; session_id?: string | null;            // null → new conversation
+  content?: string;                                         // new user message, or
+  edit_message_id?: string;  /* + content */                // replace a user message and drop what follows, or
+  regenerate?: boolean;                                     // drop the last answer and generate it again
+  system_prompt?: string | null; generation: SamplingParams; runtime: RuntimeConfig; profile_id?: string | null;
+}
+```
+
+### SSE events (`POST /chat/generate`)
+
+Validation errors are normal JSON errors **before** the stream. Then, in order:
+
+| event | data |
+|---|---|
+| `session` | `{ session_id, title, assistant_message_id, generation_id }` |
+| `status` | `{ state: "loading", runtime }` (only if a (re)load is needed), then `{ state: "generating", placement, build_info, load }` |
+| `token` / `reasoning` | `{ text }` — one streamed chunk (≈ one token); `reasoning` = thinking models' `reasoning_content` |
+| `metrics` | `LiveSnapshot` every 250 ms: `streamed_tokens, live_tokens_per_s (1 s window), avg_tokens_per_s, ttft_ms, elapsed_ms, sample: HwSample` |
+| `error` | `{ code, message, details }` (`MODEL_LOAD_FAILED`, `RUNTIME_CONNECTION`, `CANCELLED`, …) |
+| `done` | `{ message: ChatMessage, metrics: MessageMetrics }` — always last |
+
+`HwSample = { t, ts, gpu_util, vram_used, gpu_temp, gpu_power_w, energy_mj, cpu_util, ram_used, proc_rss }` — every field
+nullable (NVML/psutil); `vram_used` is device-level.
+
+`MessageMetrics` (stored on the assistant message): `wall` (AETHER clock: `ttft_ms`, `tpot_ms`, `tokens_per_s`,
+`total_ms`, `streamed_chunks`), `engine` (llama.cpp `timings`: prompt tokens/processed/cached, prompt ms and tok/s,
+completion tokens, generation ms, `tpot_ms`, `tokens_per_s`), `hardware` (peak VRAM, peak RSS, mean GPU util, GPU
+energy J…), `energy_per_token_j` (**GPU only**), `runtime`, `generation_params`, `model` (id, quant, fingerprint),
+`load`, `timeline`, `measured_at`.
+
+Stopping: `POST /chat/stop` **or** closing the connection; the engine stops reading and llama-server aborts the task.
+A stopped answer keeps its partial text (`status: "stopped"`); llama.cpp's own counts are then `null`.
+Only one generation runs at a time (`409 BUSY`).
+
+### Compare Configurations
+
+`CompareRequest = { prompt, system_prompt?, generation (default temperature 0, seed 42), configs: 2–4 × { label, model_id,
+runtime }, warmup_runs (0–5), repetitions (1–20), confirm }`. Per configuration: unload → baseline VRAM → load →
+warm-ups (discarded) → measured runs with **prompt cache disabled**. `results`:
+
+- `configs[]`: `stats[metric] = { median, p25, p75, min, max, std, n }`, raw `runs`, `placement`, `load_time_s`,
+  `vram_resident_bytes`, `output_sample`, `deterministic_output`;
+- `comparison[metric] = { medians, best, reference, vs_reference: { label: { absolute, percent } } }` — best **per metric**,
+  never an overall winner;
+- `metrics` (direction/label/unit), `protocol`, `hardware`, `backend`, `quality: { evaluated: false, note }`, `notes`.
+
+Metrics: `gen_tokens_per_s`, `prompt_tokens_per_s`, `ttft_ms`, `tpot_ms`, `total_ms`, `peak_vram_over_baseline_bytes`,
+`peak_rss_bytes`, `mean_gpu_util`, `gpu_energy_per_token_j`.
+
+## 9. Not implemented in v0.1 (contract reserved)
 
 | Feature | Behaviour |
 |---|---|

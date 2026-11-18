@@ -29,7 +29,8 @@ AETHER_TEST_GGUF=/path/model.gguf python -m pytest -q -k real   # optional real-
 
 ## Optional: llama.cpp (benchmarks, perplexity, quantization)
 
-AETHER drives the official llama.cpp tools; it does not download or build them.
+AETHER drives the official llama.cpp tools (including `llama-server` for the Chat); it does not download or build
+them. Easiest: unpack an official release into `backend/vendor/llama.cpp/<build>/` (auto-detected, gitignored).
 
 ```bash
 git clone https://github.com/ggml-org/llama.cpp && cd llama.cpp
@@ -50,6 +51,7 @@ Without it, the engine runs in analysis/estimation mode and benchmark endpoints 
 | Benchmarks (llama-bench, perplexity) with peak RAM/VRAM/energy | working with llama.cpp installed |
 | Experiments: sensitivity proxy, KV comparison, preset comparison | working; GPU ones need confirmation |
 | Optimization search (profiles, Pareto) | runtime configs only; `optimization_applied` always false |
+| Chat (llama-server): streaming, stop, live metrics, profiles, configuration comparison | working (verified on RTX 5060) |
 | lm-evaluation-harness, pruning, PyTorch inference | not implemented (explicit errors) |
 
 Licence: Apache-2.0.

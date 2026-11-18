@@ -68,3 +68,31 @@ requires the user to provide the file.
 - **Protocol:** from one F16 source, presets Q3_K_M, Q4_K_M, Q5_K_M, Q6_K, Q8_0 (with and without imatrix);
   record file size, tokens/s, peak memory, perplexity. Baseline for R-001 validation.
 - **Status:** not run.
+
+---
+
+## EXP-005 — KV cache f16 vs q8_0 on Qwen2.5-1.5B (Compare Configurations, first real run)
+
+- **Date:** 2026-11-18 · **Hardware:** RTX 5060 8 GB (driver 617.42), Ryzen 5 7500F · **Backend:** llama.cpp b12484
+  (8b8ca4c98), CUDA 13.5 build · **Model:** Qwen2.5-1.5B-Instruct Q4_K_M
+- **Protocol:** prompt "Explain, in about 150 words, how a transformer decodes text token by token.", 128 max tokens,
+  temperature 0, seed 42, 1 warm-up + 3 measured runs, prompt cache disabled, ctx 4096, all layers on GPU.
+  A = KV f16/f16, flash-attn auto; B = KV q8_0/q8_0, flash-attn on.
+
+| Metric (median of 3) | A (f16) | B (q8_0) |
+|---|---|---|
+| Generation (llama.cpp) | 238.4 tok/s | 232.4 tok/s (−2.5 %) |
+| Prompt processing (50 tokens) | 3615 tok/s | 3597 tok/s |
+| Peak VRAM over no-model baseline | 1191 MiB | 1190 MiB |
+| VRAM resident after load | 1224 MiB | 1170 MiB |
+| GPU energy per token (GPU only) | 0.433 J | 0.527 J |
+
+Outputs were identical across runs within each configuration (deterministic decoding). **Interpretation (limited):**
+at 4k context this model's KV cache is small (~112 MiB in f16), so q8_0 saves ~54 MiB of resident VRAM and cost ~2.5 %
+decode speed here. n = 3 runs, one prompt, one model: not a general result. Quality was not evaluated.
+
+Measurement issues found and fixed while running this experiment (the figures above are after the fixes):
+1. llama-server's prompt cache made repeated runs re-process about one token (prefill ≈ 230 tok/s, meaningless):
+   comparisons now send `cache_prompt: false`.
+2. Creating an `httpx.Client` per request added ~190 ms to every wall-clock TTFT: one persistent client is used.
+   TTFT is now 26–35 ms for a 50-token prompt (llama.cpp prompt time 13 ms).

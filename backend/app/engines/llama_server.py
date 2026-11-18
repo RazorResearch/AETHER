@@ -16,6 +16,7 @@ A single model is kept resident because the reference GPU has 8 GB of VRAM.
 from __future__ import annotations
 
 import json
+import os
 import re
 import socket
 import subprocess
@@ -90,10 +91,78 @@ class RuntimeStatus(BaseModel):
     port: int | None = None
     since: float | None = None
     load_time_s: float | None = None
+    vram_resident_bytes: int | None = Field(
+        None, description="Device VRAM used after load minus before load (measured; device-level).")
     placement: Placement = Placement()
     build_info: str | None = None
     error: str | None = None
     log_tail: list[str] = []
+
+
+def _bind_child_lifetime() -> dict:
+    """Popen kwargs so llama-server dies with the engine (no orphan holding VRAM)."""
+    if os.name != "nt":
+        def _pdeathsig():  # Linux: SIGTERM the child when the parent dies
+            try:
+                import ctypes
+                import signal
+
+                ctypes.CDLL("libc.so.6").prctl(1, signal.SIGTERM)  # PR_SET_PDEATHSIG
+            except Exception:
+                pass
+        return {"preexec_fn": _pdeathsig}
+    return {}
+
+
+class _WindowsJob:
+    """Job object with KILL_ON_JOB_CLOSE: children are killed when the engine process exits."""
+
+    def __init__(self) -> None:
+        self.handle = None
+        if os.name != "nt":
+            return
+        try:
+            import ctypes
+            from ctypes import wintypes
+
+            k32 = ctypes.WinDLL("kernel32", use_last_error=True)
+
+            class IO_COUNTERS(ctypes.Structure):
+                _fields_ = [(n, ctypes.c_ulonglong) for n in (
+                    "ReadOperationCount", "WriteOperationCount", "OtherOperationCount",
+                    "ReadTransferCount", "WriteTransferCount", "OtherTransferCount")]
+
+            class BASIC(ctypes.Structure):
+                _fields_ = [("PerProcessUserTimeLimit", ctypes.c_int64), ("PerJobUserTimeLimit", ctypes.c_int64),
+                            ("LimitFlags", wintypes.DWORD), ("MinimumWorkingSetSize", ctypes.c_size_t),
+                            ("MaximumWorkingSetSize", ctypes.c_size_t), ("ActiveProcessLimit", wintypes.DWORD),
+                            ("Affinity", ctypes.c_size_t), ("PriorityClass", wintypes.DWORD),
+                            ("SchedulingClass", wintypes.DWORD)]
+
+            class EXTENDED(ctypes.Structure):
+                _fields_ = [("BasicLimitInformation", BASIC), ("IoInfo", IO_COUNTERS),
+                            ("ProcessMemoryLimit", ctypes.c_size_t), ("JobMemoryLimit", ctypes.c_size_t),
+                            ("PeakProcessMemoryUsed", ctypes.c_size_t), ("PeakJobMemoryUsed", ctypes.c_size_t)]
+
+            k32.CreateJobObjectW.restype = wintypes.HANDLE
+            job = k32.CreateJobObjectW(None, None)
+            info = EXTENDED()
+            info.BasicLimitInformation.LimitFlags = 0x2000  # JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+            if k32.SetInformationJobObject(job, 9, ctypes.byref(info), ctypes.sizeof(info)):
+                self.handle, self._k32 = job, k32
+        except Exception:
+            self.handle = None
+
+    def assign(self, popen: subprocess.Popen) -> None:
+        if self.handle is None:
+            return
+        try:
+            self._k32.AssignProcessToJobObject(self.handle, int(popen._handle))  # type: ignore[attr-defined]
+        except Exception:
+            pass
+
+
+_JOB = _WindowsJob()
 
 
 def _free_port() -> int:
@@ -168,6 +237,9 @@ class LlamaServerRuntime:
                                 code="BUSY")
         with self._lock:
             self._stop_locked("unloading")
+            from app.core.hardware import sample_gpu
+
+            vram_before = sample_gpu().used_bytes
             port = _free_port()
             argv = list(self.argv_prefix) + [
                 "-m", model_path, "--host", "127.0.0.1", "--port", str(port),
@@ -179,9 +251,10 @@ class LlamaServerRuntime:
                 argv += ["-t", str(cfg.n_threads)]
             try:
                 popen = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
-                                         encoding="utf-8", errors="replace")
+                                         encoding="utf-8", errors="replace", **_bind_child_lifetime())
             except OSError as exc:
                 raise EngineUnavailableError(f"Cannot start llama-server: {exc}")
+            _JOB.assign(popen)
             proc = _Proc(popen, port)
             proc.reader = threading.Thread(target=self._read_log, args=(proc,), daemon=True)
             proc.reader.start()
@@ -214,9 +287,14 @@ class LlamaServerRuntime:
             build = self._http.get(f"http://127.0.0.1:{port}/props", timeout=2.0).json().get("build_info")
         except Exception:
             pass
+        from app.core.hardware import sample_gpu
+
+        vram_after = sample_gpu().used_bytes
         with self._lock:
             self._status.state = "ready"
             self._status.load_time_s = round(time.time() - t0, 3)
+            if vram_before is not None and vram_after is not None:
+                self._status.vram_resident_bytes = max(0, vram_after - vram_before)
             self._status.build_info = build
             self._status.placement = self._parse_placement(list(proc.log))
         return self.status()

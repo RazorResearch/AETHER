@@ -100,6 +100,11 @@ class ProfileService:
         a = ModelAnalysis.model_validate(model["analysis"])
         snap = self.s.hardware()
         budget = self.s.memory_budget(snap)
+        # VRAM held by AETHER's own resident model would be freed when switching config: count it as available.
+        st = self.s.chat_runtime.status()
+        reclaimed = st.vram_resident_bytes if st.state == "ready" and st.vram_resident_bytes else 0
+        if budget.vram_available_bytes is not None and reclaimed:
+            budget = budget.model_copy(update={"vram_available_bytes": budget.vram_available_bytes + reclaimed})
         train_ctx = a.architecture.context_length or 4096
         n_layers = a.architecture.n_layers or len(a.layers)
 
@@ -150,6 +155,7 @@ class ProfileService:
         ]
         return {"model_id": model_id, "hardware": {"accelerator": snap.accelerator,
                                                    "vram_free_bytes": budget.vram_available_bytes,
+                                                   "vram_reclaimable_from_resident_model_bytes": reclaimed,
                                                    "ram_available_bytes": budget.ram_available_bytes,
                                                    "logical_cores": snap.cpu.logical_cores},
                 "train_context": train_ctx, "n_layers": n_layers, "presets": presets,

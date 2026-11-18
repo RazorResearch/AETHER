@@ -30,14 +30,20 @@
 - [x] Speculative decoding compatibility check
 - [ ] Measured speculative decoding (llama-speculative / llama-server draft)
 
+**Chat & live inference (2026-11-18)**
+- [x] llama-server runtime, SSE streaming, stop, regenerate, edit & resubmit, persisted conversations
+- [x] Live metrics (tok/s, TTFT, TPOT, prefill, GPU/VRAM/temp/power, CPU/RAM, measured layer split) and charts
+- [x] Profiles and hardware-aware presets; Compare Configurations with warm-up, repetitions, medians, p25–p75
+- [ ] Quality evaluation in comparisons (perplexity on a local text, lm-evaluation-harness through llama-server)
+- [ ] Multiple slots / concurrent sessions (one generation at a time by design today)
+
 **Priority 6 — frontend integration**
 - [x] `docs/API_CONTRACT.md` with field mappings to the frontend types
 - [ ] Frontend team replaces simulated telemetry with `GET /system/hardware`
 
 ## Next
 
-1. **Install llama.cpp with CUDA** on the reference machine (user action; build from source,
-   `-DGGML_CUDA=ON`; RTX 50-series needs a recent CUDA toolkit with sm_120 support), set `AETHER_LLAMACPP_DIR`.
+1. ~~Install llama.cpp with CUDA~~ — done: official b12484 CUDA 13.5 build in `backend/vendor/` (checksums verified).
 2. Reference benchmarks for 0.5B / 1.5B / 3B models (Q4_K_M, Q8_0) — establish the baseline.
 3. Imatrix-weighted sensitivity; output-space validation of R-001.
 4. `llama-server` lifecycle management → lm-evaluation-harness (GSM8K, ARC, MMLU), French comprehension set

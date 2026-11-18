@@ -13,7 +13,8 @@ function MetricsLine({ m }: { m: ChatMessage }) {
   const parts = [
     x.engine.tokens_per_s != null ? `${formatNumber(x.engine.tokens_per_s, 1)} tok/s` : null,
     x.wall.ttft_ms != null ? `TTFT ${formatNumber(x.wall.ttft_ms, 0)} ms` : null,
-    x.engine.completion_tokens != null ? `${x.engine.completion_tokens} tokens` : null,
+    `${x.engine.completion_tokens ?? x.wall.streamed_chunks} tokens`,
+    x.engine.tokens_per_s == null && x.wall.tokens_per_s != null ? `${formatNumber(x.wall.tokens_per_s, 1)} tok/s (wall)` : null,
     x.wall.total_ms != null ? `${formatNumber(x.wall.total_ms / 1000, 2)} s` : null,
     x.model.quantization,
     `KV ${x.runtime.cache_type_k}/${x.runtime.cache_type_v}`,

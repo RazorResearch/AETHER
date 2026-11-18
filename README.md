@@ -306,9 +306,10 @@ npm install
 npm run dev
 ```
 
-Optional: build llama.cpp with CUDA and set `AETHER_LLAMACPP_DIR` before starting the engine
-to enable benchmarks, perplexity and quantization (see `backend/README.md`). A packaged build
-can point the UI elsewhere with `VITE_AETHER_API`.
+**llama.cpp** powers the Chat, benchmarks, perplexity and quantization. Unpack an official release
+(e.g. `llama-bXXXX-bin-win-cuda-13.5-x64.zip` + the matching `cudart` zip, or a Linux build) into
+`backend/vendor/llama.cpp/<build>/` (detected automatically), or set `AETHER_LLAMACPP_DIR`.
+A packaged build can point the UI elsewhere with `VITE_AETHER_API`.
 
 **Stack:** React 18, TypeScript (strict), Vite 5, Tailwind CSS 3, Recharts, lucide-react,
 Zustand, React Router (`HashRouter`, Tauri-ready).
@@ -318,6 +319,7 @@ Zustand, React Router (`HashRouter`, Tauri-ready).
 | Page | Source |
 |---|---|
 | Overview | Live hardware (sparklines = this session's samples), measured throughput, engine counters and events |
+| Chat | Local chat on llama-server: streaming, Markdown/code, stop/regenerate/edit, live tok/s, TTFT, TPOT, VRAM/RAM/GPU charts, profiles and presets, Compare Configurations lab |
 | Models | Engine library: import by absolute path, folder scan, GGUF analysis (layers, heads, tensor mix, bits/weight) |
 | Hardware | NVML GPU (VRAM, utilisation, temperature, power), CPU per-core load, RAM/swap, volumes, driver/CUDA versions |
 | Optimization | Engine memory estimate (VRAM/RAM placement, OOM risk, KV cache, preset sizes) and ranked configuration search |
@@ -329,14 +331,27 @@ Zustand, React Router (`HashRouter`, Tauri-ready).
 Every value carries its provenance: **Live**, **Measured**, **Estimated** or **Proxy**. Missing
 values are shown as “—”, never invented.
 
+### Chat: what is measured and how
+
+| Metric | Source |
+|---|---|
+| Tokens/s, TPOT, prompt tokens, prefill tok/s | llama.cpp `timings` returned by llama-server |
+| Live tokens/s (1 s window), TTFT, total duration | AETHER wall clock around the HTTP stream |
+| GPU util, VRAM (device), temperature, power, energy | NVML, sampled every 250 ms during generation (energy = GPU board only) |
+| CPU, system RAM, llama-server RSS | psutil, same sampler |
+| GPU/CPU layer split, per-device buffers | parsed from llama-server's load log (`offloaded X/Y layers to GPU`) |
+
+Unavailable values are shown as "Unavailable". Compare Configurations disables llama-server's prompt cache,
+runs warm-ups then repeated runs, and reports medians with p25–p75.
+
 ### Frontend architecture
 
 ```
 src/
-├── api/         typed client (client.ts), engine types (types.ts), adapters
-├── store/       useEngineStore (engine data, polling) · useAppStore (UI prefs, persisted) · toasts
-├── components/  layout · navigation · engine · charts · cards · tables · ui
-├── pages/       Overview, Models, Hardware, Optimization, Experiments,
+├── api/         typed clients (client.ts, chat.ts with SSE reader), engine types (types.ts), adapters
+├── store/       useEngineStore (engine data, polling) · useChatStore (chat, SSE) · useAppStore (UI prefs) · toasts
+├── components/  layout · navigation · engine · chat · charts · cards · tables · ui
+├── pages/       Overview, Chat, Models, Hardware, Optimization, Experiments,
 │                Benchmarks, Activity, Settings, About
 ├── hooks/       clock, chart theme
 ├── types/       UI-only types

@@ -34,6 +34,8 @@ backend/
 │   ├── engines/
 │   │   ├── base.py             InferenceEngine ABC, RuntimeParams, BenchResult…
 │   │   ├── llamacpp.py         subprocess adapter: llama-bench/perplexity/quantize/imatrix
+│   │   ├── llama_server.py     resident llama-server runtime (load/unload, SSE client, measured placement)
+│   │   ├── live_sampler.py     timestamped NVML/psutil sampling during generation
 │   │   ├── monitor.py          per-process peak RAM, VRAM, GPU energy sampling
 │   │   └── pytorch.py          optional engine (explicitly not implemented for inference)
 │   ├── optimizations/
@@ -45,7 +47,8 @@ backend/
 │   ├── benchmarks/             records (reproducibility + comparability), runner, quality evaluators
 │   ├── experiments/registry.py experiment types, config schemas, runners, cost classes
 │   ├── database/db.py          SQLite + versioned migrations + generic CRUD
-│   └── services/               container, jobs, activity, benchmarks, experiments, optimization
+│   └── services/               container, jobs, activity, benchmarks, experiments, optimization,
+│                               chat (sessions + SSE generation), chat_profiles, chat_compare
 ├── tests/                      pytest suite, synthetic GGUF builder, fake llama.cpp tools
 ├── scripts/run_exp001.py       reproducible research script
 ├── pyproject.toml / requirements.txt
@@ -82,6 +85,19 @@ HTTP → routes → service (validation, persistence, activity log)
 7. **Tests without hardware**: fake llama.cpp tools (Python scripts emitting the real output formats),
    injected hardware snapshots (CPU-only and GPU), synthetic GGUF models with real ggml layouts.
 
+## 4b. Interactive inference (Chat)
+
+```
+UI --POST /chat/generate (SSE)--> ChatService -- worker thread --> LlamaServerRuntime --HTTP stream--> llama-server
+ ^                                    |                                (127.0.0.1, free port, -lv 4 log parsed)
+ +-- session/status/token/metrics/done events <-- queue <-- LiveSampler (NVML/psutil, 250 ms)
+```
+
+One model is resident at a time (8 GB VRAM). The llama-server child is bound to the engine's lifetime (Windows Job
+Object with KILL_ON_JOB_CLOSE, Linux PDEATHSIG), so a crashed engine never leaves VRAM allocated (verified by
+hard-killing the parent). Stopping closes the HTTP stream, which aborts the llama.cpp task. Comparisons run through
+the job queue and never overlap a chat generation (`BUSY`).
+
 ## 5. Configuration
 
 | Variable | Default | Purpose |
@@ -89,13 +105,14 @@ HTTP → routes → service (validation, persistence, activity log)
 | `AETHER_DATA_DIR` | `~/.aether` | database + artifacts (quantized files, results) |
 | `AETHER_DB_PATH` | `$AETHER_DATA_DIR/aether.db` | SQLite file |
 | `AETHER_MODEL_DIRS` | — | `os.pathsep`-separated directories for `POST /models/scan` |
-| `AETHER_LLAMACPP_DIR` | — | llama.cpp build dir (`bin/`, `build/bin/` are searched), else `PATH` |
+| `AETHER_LLAMACPP_DIR` | newest `backend/vendor/llama.cpp/*` | llama.cpp build dir (`bin/`, `build/bin/` are searched), else `PATH` |
 | `AETHER_CORS_ORIGINS` | Vite dev + Tauri | comma-separated allowed origins |
 
 ## 6. Database schema (migration 1)
 
 `models`, `hardware_profiles`, `experiments`, `benchmarks`, `optimization_jobs`, `activity_logs`,
-plus `schema_migrations`. To change the schema, append `(version, description, sql)` to `MIGRATIONS`;
+plus `schema_migrations`. Migration 2 adds `chat_sessions`, `chat_messages` (metrics stored per answer),
+`chat_profiles`, `chat_comparisons`. To change the schema, append `(version, description, sql)` to `MIGRATIONS`;
 never edit an applied migration.
 
 ## 7. Dependencies and licences
@@ -104,7 +121,9 @@ never edit an applied migration.
 |---|---|---|
 | fastapi, pydantic | MIT | yes |
 | uvicorn, psutil, numpy, nvidia-ml-py | BSD-3-Clause | yes |
-| pytest (MIT), httpx (BSD-3) | — | tests |
+| httpx | BSD-3-Clause | yes (llama-server client) |
+| pytest (MIT) | — | tests |
+| react-markdown, remark-gfm, rehype-highlight (frontend) | MIT | yes |
 | llama.cpp | MIT | runtime tool, not vendored |
 | torch (BSD-3), lm-eval (MIT) | — | optional |
 
