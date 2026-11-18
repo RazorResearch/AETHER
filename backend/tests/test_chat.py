@@ -233,6 +233,8 @@ def test_compare_configurations(chat_client, tiny_gguf):
     comp = out["comparison"]["gen_tokens_per_s"]
     assert comp["reference"] == "A" and comp["best"] in ("A", "B") and "percent" in comp["vs_reference"]["B"]
     assert out["quality"]["evaluated"] is False
+    reqs = [json.loads(x) for x in open(str(tiny_gguf) + ".requests.jsonl")]
+    assert reqs and all(r["cache_prompt"] is False for r in reqs[-8:])  # benchmark runs never use the prompt cache
     assert any("GPU only" in n for n in out["notes"])
     assert chat_client.get(f"{V}/chat/compare").json()[0]["id"] == cmp["id"]
     bad = chat_client.post(f"{V}/chat/compare", json={**body, "confirm": True,

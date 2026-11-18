@@ -33,6 +33,7 @@ print("I load_tensors:        CUDA0 model buffer size =   100.50 MiB", flush=Tru
 print("I load_tensors:   CPU_Mapped model buffer size =    10.00 MiB", flush=True)
 print("I llama_kv_cache:      CUDA0 KV buffer size =    16.00 MiB", flush=True)
 ready_at = time.time() + 0.3
+LOG = model + ".requests.jsonl"
 WORDS = ("The quick brown fox jumps over the lazy dog . " * 200).split()
 
 
@@ -64,6 +65,8 @@ class H(BaseHTTPRequestHandler):
             return self._json(404, {"error": "not found"})
         max_tokens = int(req.get("max_tokens", 16))
         prompt_tokens = sum(len(m["content"].split()) for m in req["messages"])
+        with open(LOG, "a") as fh:
+            fh.write(json.dumps({"cache_prompt": req.get("cache_prompt")}) + "\n")
         self.send_response(200)
         self.send_header("Content-Type", "text/event-stream")
         self.end_headers()

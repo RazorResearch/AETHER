@@ -6,6 +6,13 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "port": 5173
+    },
+    {
+      "name": "frontend-engine-8766",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "env": { "AETHER_ENGINE_URL": "http://127.0.0.1:8766" },
+      "port": 5180
     }
   ]
 }

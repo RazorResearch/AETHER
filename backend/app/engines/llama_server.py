@@ -118,6 +118,9 @@ class LlamaServerRuntime:
         self._proc: _Proc | None = None
         self._status = RuntimeStatus(state="unloaded")
         self._busy = threading.Lock()  # one generation at a time (single slot)
+        # One persistent client: creating an httpx.Client costs ~0.2 s (SSL context), which
+        # would otherwise be counted inside every TTFT measurement.
+        self._http = httpx.Client(timeout=httpx.Timeout(10.0, read=600.0), trust_env=False)
 
     # ----------------------------------------------------------------- status
     @property
@@ -197,7 +200,7 @@ class LlamaServerRuntime:
                 raise ExecutionError("Model failed to load", code="MODEL_LOAD_FAILED",
                                      details={"log_tail": tail})
             try:
-                r = httpx.get(f"http://127.0.0.1:{port}/health", timeout=1.0)
+                r = self._http.get(f"http://127.0.0.1:{port}/health", timeout=1.0)
                 if r.status_code == 200:
                     break
             except httpx.HTTPError:
@@ -208,7 +211,7 @@ class LlamaServerRuntime:
             raise ExecutionError(f"Model did not become ready within {self.load_timeout_s}s", code="TIMEOUT")
         build = None
         try:
-            build = httpx.get(f"http://127.0.0.1:{port}/props", timeout=2.0).json().get("build_info")
+            build = self._http.get(f"http://127.0.0.1:{port}/props", timeout=2.0).json().get("build_info")
         except Exception:
             pass
         with self._lock:
@@ -270,7 +273,7 @@ class LlamaServerRuntime:
 
     # ------------------------------------------------------------ generation
     def stream_chat(self, messages: list[dict], sampling: SamplingParams,
-                    cancel: threading.Event) -> Iterator[dict]:
+                    cancel: threading.Event, cache_prompt: bool = True) -> Iterator[dict]:
         """Yield events: {'type': 'token'|'reasoning', 'text', 't'} then {'type': 'final', ...}.
 
         Cancellation closes the HTTP stream; llama-server aborts the task when
@@ -284,41 +287,42 @@ class LlamaServerRuntime:
                 "temperature": sampling.temperature, "top_p": sampling.top_p, "top_k": sampling.top_k,
                 "min_p": sampling.min_p, "repeat_penalty": sampling.repeat_penalty,
                 "max_tokens": sampling.max_tokens, "timings_per_token": False,
+                # False for benchmarks: otherwise a repeated prompt is served from the KV cache
+                "cache_prompt": cache_prompt,
             }
             if sampling.seed is not None:
                 body["seed"] = sampling.seed
             final: dict = {"type": "final", "finish_reason": None, "timings": None, "usage": None}
-            with httpx.Client(timeout=httpx.Timeout(10.0, read=600.0)) as client:
-                with client.stream("POST", f"{self.base_url}/v1/chat/completions", json=body) as r:
-                    if r.status_code != 200:
-                        r.read()
-                        raise ExecutionError(f"llama-server answered HTTP {r.status_code}",
-                                             details={"body": r.text[:2000]})
-                    for line in r.iter_lines():
-                        if cancel.is_set():
-                            final["finish_reason"] = "stopped"
-                            break
-                        if not line.startswith("data:"):
-                            continue
-                        data = line[5:].strip()
-                        if data == "[DONE]":
-                            break
-                        chunk = json.loads(data)
-                        now = time.perf_counter()
-                        if "error" in chunk:
-                            raise ExecutionError(str(chunk["error"]))
-                        for ch in chunk.get("choices") or []:
-                            delta = ch.get("delta") or {}
-                            if delta.get("reasoning_content"):
-                                yield {"type": "reasoning", "text": delta["reasoning_content"], "t": now}
-                            if delta.get("content"):
-                                yield {"type": "token", "text": delta["content"], "t": now}
-                            if ch.get("finish_reason"):
-                                final["finish_reason"] = ch["finish_reason"]
-                        if chunk.get("timings"):
-                            final["timings"] = chunk["timings"]
-                        if chunk.get("usage"):
-                            final["usage"] = chunk["usage"]
+            with self._http.stream("POST", f"{self.base_url}/v1/chat/completions", json=body) as r:
+                if r.status_code != 200:
+                    r.read()
+                    raise ExecutionError(f"llama-server answered HTTP {r.status_code}",
+                                         details={"body": r.text[:2000]})
+                for line in r.iter_lines():
+                    if cancel.is_set():
+                        final["finish_reason"] = "stopped"
+                        break
+                    if not line.startswith("data:"):
+                        continue
+                    data = line[5:].strip()
+                    if data == "[DONE]":
+                        break
+                    chunk = json.loads(data)
+                    now = time.perf_counter()
+                    if "error" in chunk:
+                        raise ExecutionError(str(chunk["error"]))
+                    for ch in chunk.get("choices") or []:
+                        delta = ch.get("delta") or {}
+                        if delta.get("reasoning_content"):
+                            yield {"type": "reasoning", "text": delta["reasoning_content"], "t": now}
+                        if delta.get("content"):
+                            yield {"type": "token", "text": delta["content"], "t": now}
+                        if ch.get("finish_reason"):
+                            final["finish_reason"] = ch["finish_reason"]
+                    if chunk.get("timings"):
+                        final["timings"] = chunk["timings"]
+                    if chunk.get("usage"):
+                        final["usage"] = chunk["usage"]
             yield final
         except httpx.HTTPError as exc:
             raise ExecutionError(f"Connection to llama-server failed: {exc}", code="RUNTIME_CONNECTION")

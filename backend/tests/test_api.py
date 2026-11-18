@@ -183,7 +183,9 @@ def test_optimization_measured(client_llama, tiny_gguf, tmp_path):
     m = _import(c, tiny_gguf)
     ds = tmp_path / "eval.txt"
     ds.write_text("x " * 100)
-    r = c.post(f"{V}/optimization/start", json={"model_id": m["id"], "profile": "maximum_speed", "measure": True,
+    r = c.post(f"{V}/optimization/start", json={"model_id": m["id"], "profile": "custom",
+                                                "custom_weights": {"quality": 0, "speed": 1, "memory": 0, "energy": 0},
+                                                "measure": True,
                                                 "confirm": True, "repetitions": 1, "perplexity_dataset": str(ds)})
     j = _wait(c, r.json()["id"])
     assert j["status"] == "completed", j

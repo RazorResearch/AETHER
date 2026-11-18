@@ -6,6 +6,7 @@ import {
   Cpu,
   FlaskConical,
   LayoutDashboard,
+  MessagesSquare,
   Settings2,
   SlidersHorizontal,
   type LucideIcon,
@@ -33,6 +34,7 @@ export const navSections: NavSection[] = [
     label: 'Workspace',
     items: [
       { label: 'Overview', path: '/overview', icon: LayoutDashboard, code: 'OVW' },
+      { label: 'Chat', path: '/chat', icon: MessagesSquare, code: 'CHT' },
       { label: 'Models', path: '/models', icon: Boxes, code: 'MDL', counter: 'models' },
       { label: 'Hardware', path: '/hardware', icon: Cpu, code: 'HW' },
       { label: 'Optimization', path: '/optimization', icon: SlidersHorizontal, code: 'OPT' },

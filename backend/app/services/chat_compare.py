@@ -141,7 +141,7 @@ class CompareService:
         final: dict = {}
         text: list[str] = []
         try:
-            for ev in self.runtime.stream_chat(messages, gen, cancel):
+            for ev in self.runtime.stream_chat(messages, gen, cancel, cache_prompt=False):
                 if ev["type"] in ("token", "reasoning"):
                     t_first = t_first or ev["t"]
                     t_last = ev["t"]
@@ -167,6 +167,8 @@ class CompareService:
             "gpu_energy_per_token_j": hw.gpu_energy_j / completion if hw.gpu_energy_j and completion else None,
             "completion_tokens": completion,
             "prompt_tokens": (final.get("usage") or {}).get("prompt_tokens"),
+            "prompt_tokens_processed": tim.get("prompt_n"),
+            "prompt_tokens_cached": tim.get("cache_n"),
             "finish_reason": final.get("finish_reason"),
             "text": "".join(text),
         }
@@ -242,6 +244,7 @@ class CompareService:
                                 "identical text across runs indicates deterministic decoding."},
             "notes": [
                 "Speed figures from llama.cpp timings; TTFT/TPOT measured by AETHER around the HTTP stream.",
+                "Prompt caching is disabled for every run (cache_prompt=false): the full prompt is re-processed.",
                 "GPU energy is the NVML board counter (GPU only, excludes CPU/RAM/system).",
                 "Peak VRAM is device-level minus the baseline measured with no model loaded.",
                 "No configuration is ranked overall: compare per metric and weigh quality separately.",

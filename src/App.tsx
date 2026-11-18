@@ -1,6 +1,7 @@
 import { HashRouter, Navigate, Route, Routes, Link } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
 import { OverviewPage } from '@/pages/Overview';
+import { ChatPage } from '@/pages/Chat';
 import { ModelsPage } from '@/pages/Models';
 import { HardwarePage } from '@/pages/Hardware';
 import { OptimizationPage } from '@/pages/Optimization';
@@ -41,6 +42,7 @@ export default function App() {
         <Route path="/" element={<AppShell />}>
           <Route index element={<Navigate to="/overview" replace />} />
           <Route path="overview" element={<OverviewPage />} />
+          <Route path="chat" element={<ChatPage />} />
           <Route path="models" element={<ModelsPage />} />
           <Route path="hardware" element={<HardwarePage />} />
           <Route path="optimization" element={<OptimizationPage />} />
